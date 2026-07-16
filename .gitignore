@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Local scratch clone used to extract the example (has its own .git)
+.agents-src/
+
+# Secrets / local env
+.env
+.env.local
+.env.*.local
+
+# Generated SQLite db (example also ignores these under its own dir)
+fake_data/hotel.db
+fake_data/hotel.db-shm
+fake_data/hotel.db-wal
+
+# macOS
+.DS_Store
