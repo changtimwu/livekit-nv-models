@@ -154,7 +154,9 @@ stt = openai.STT(model="mlx-community/whisper-large-v3-turbo-asr-fp16",
    while testing. 🧩 pick model above.
 3. **Turn detection → local** — trivial add (`MultilingualModel()`), optional polish.
 4. **TTS → local MLX** — `mlx-audio` Kokoro + `openai.TTS(base_url=)`. Low risk.
-5. **STT → local MLX** — Whisper via `mlx-audio` + `openai.STT(use_realtime=False)`. Hardest; last.
+5. **STT → local MLX** ✅ — used **Qwen3-ASR** (not Whisper) via a custom in-process plugin
+   `hotel_receptionist/local_stt.py`, because mlx-audio's *HTTP server* crashes on Qwen3-ASR
+   (thread-local MLX stream). Non-streaming → auto StreamAdapter + session VAD. Hardest; last.
 
 > (Pure-risk order would put TTS before LLM, but doing LLM first de-risks the whole plan by
 > exposing the tool-calling question immediately — and it's what we most want to prove.)
@@ -192,3 +194,12 @@ stt = openai.STT(model="mlx-community/whisper-large-v3-turbo-asr-fp16",
   (`TTS_BACKEND=local`, default cloud). Local deps captured in `requirements-local.txt` (mlx-audio,
   uvicorn/fastapi, webrtcvad, misaki[en], `setuptools<80` for `pkg_resources`). STT still cloud.
   **Next: STT → local (mlx-audio Whisper) — the last and hardest.**
+- **2026-07-21 (later 3)** — **STT swapped to local MLX ✅ — the agent is now FULLY LOCAL.** Used
+  **Qwen3-ASR** (`mlx-community/Qwen3-ASR-1.7B-8bit`) per request. **Gotcha solved:** mlx-audio's
+  HTTP server crashes on Qwen3-ASR — `RuntimeError: no Stream(gpu, 0) in current thread` (MLX
+  streams are thread-local; the server loads on one thread and generates on another). Fix: a custom
+  in-process LiveKit STT plugin (`local_stt.py` → `MLXQwen3STT`) that loads **and** runs on ONE
+  dedicated worker thread — so **no STT server process is needed**. Non-streaming → AgentSession
+  wraps it with StreamAdapter + the session VAD. Verified end-to-end (WAV→plugin→FINAL_TRANSCRIPT,
+  exact text; ~1.1 s for 4.4 s audio). Toggle `STT_BACKEND=local`. **Phase 2 COMPLETE:
+  VAD (native) + LLM (Qwen3-8B) + TTS (Kokoro) + STT (Qwen3-ASR) all local on the M1 Max.**

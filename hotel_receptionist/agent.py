@@ -255,6 +255,24 @@ def _build_tts():
     return inference.TTS("inworld/inworld-tts-2")
 
 
+def _build_stt():
+    """Select the STT backend.
+
+    Default: LiveKit Cloud Inference (``deepgram/nova-3``).
+    Set ``STT_BACKEND=local`` in ``.env.local`` to use local mlx-audio Qwen3-ASR
+    (Phase 2 / MLX). It's non-streaming, so AgentSession wraps it with the
+    session VAD (StreamAdapter) — each end-of-speech utterance is transcribed once.
+    """
+    if os.getenv("STT_BACKEND", "cloud").lower() == "local":
+        from local_stt import MLXQwen3STT
+
+        return MLXQwen3STT(
+            model=os.getenv("LOCAL_STT_MODEL", "mlx-community/Qwen3-ASR-1.7B-8bit"),
+            language=os.getenv("LOCAL_STT_LANGUAGE", "en"),
+        )
+    return inference.STT("deepgram/nova-3")
+
+
 @server.rtc_session(on_session_end=on_session_end, on_simulation_end=on_simulation_end)
 async def hotel_receptionist_agent(ctx: JobContext) -> None:
     await ctx.connect()
@@ -273,7 +291,7 @@ async def hotel_receptionist_agent(ctx: JobContext) -> None:
         # future across a long call / nested-task switch and makes the turn-commit
         # logic sleep for that offset (~the elapsed call time) before replying.
         vad=inference.VAD(model="silero"),
-        stt=inference.STT("deepgram/nova-3"),
+        stt=_build_stt(),
         llm=_build_llm(),
         tts=_build_tts(),
         max_tool_steps=5,
