@@ -245,6 +245,12 @@ def _build_tts():
     speech server such as ``mlx-audio`` + Kokoro on Apple Silicon (Phase 2 / MLX).
     """
     if os.getenv("TTS_BACKEND", "cloud").lower() == "local":
+        # NOTE (asymmetry): this local branch does NOT honor AGENT_LANG. The default
+        # Kokoro voice (af_heart) is English, so AGENT_LANG=zh + TTS_BACKEND=local
+        # would speak the LLM's Chinese text with an English voice. Local STT does
+        # inherit AGENT_LANG; local TTS does not — wiring a Chinese Kokoro voice here
+        # is Phase-2 work, out of scope for this Phase-1-cloud spike. For zh today,
+        # keep TTS on the cloud (inworld) path below.
         from livekit.agents.types import DEFAULT_API_CONNECT_OPTIONS
         from livekit.plugins import openai
         from livekit.plugins.openai.tts import AudioChunkedStream
