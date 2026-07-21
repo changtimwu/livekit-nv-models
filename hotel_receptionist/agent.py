@@ -200,6 +200,31 @@ async def on_session_end(ctx: JobContext) -> None:
         logger.exception("error closing hotel DB")
 
 
+def _build_llm():
+    """Select the LLM backend.
+
+    Default: LiveKit Cloud Inference (``google/gemma-4-31b-it``).
+    Set ``LLM_BACKEND=local`` in ``.env.local`` to use a local OpenAI-compatible
+    server such as ``mlx_lm.server`` on Apple Silicon (Phase 2 / MLX). Override the
+    model/endpoint with ``LOCAL_LLM_MODEL`` / ``LOCAL_LLM_BASE_URL``.
+    """
+    if os.getenv("LLM_BACKEND", "cloud").lower() == "local":
+        from livekit.plugins import openai
+
+        model = os.getenv("LOCAL_LLM_MODEL", "mlx-community/Qwen3-8B-4bit")
+        extra_body = {}
+        if "qwen3" in model.lower():
+            # Qwen3 defaults to "thinking" mode (slow, rambly) — disable it for voice.
+            extra_body = {"chat_template_kwargs": {"enable_thinking": False}}
+        return openai.LLM(
+            model=model,
+            base_url=os.getenv("LOCAL_LLM_BASE_URL", "http://127.0.0.1:8080/v1"),
+            api_key="not-needed",
+            extra_body=extra_body,
+        )
+    return inference.LLM("google/gemma-4-31b-it")
+
+
 @server.rtc_session(on_session_end=on_session_end, on_simulation_end=on_simulation_end)
 async def hotel_receptionist_agent(ctx: JobContext) -> None:
     await ctx.connect()
@@ -219,7 +244,7 @@ async def hotel_receptionist_agent(ctx: JobContext) -> None:
         # logic sleep for that offset (~the elapsed call time) before replying.
         vad=inference.VAD(model="silero"),
         stt=inference.STT("deepgram/nova-3"),
-        llm=inference.LLM("google/gemma-4-31b-it"),
+        llm=_build_llm(),
         tts=inference.TTS("inworld/inworld-tts-2"),
         max_tool_steps=5,
     )
