@@ -225,6 +225,36 @@ def _build_llm():
     return inference.LLM("google/gemma-4-31b-it")
 
 
+def _build_tts():
+    """Select the TTS backend.
+
+    Default: LiveKit Cloud Inference (``inworld/inworld-tts-2``).
+    Set ``TTS_BACKEND=local`` in ``.env.local`` to use a local OpenAI-compatible
+    speech server such as ``mlx-audio`` + Kokoro on Apple Silicon (Phase 2 / MLX).
+    """
+    if os.getenv("TTS_BACKEND", "cloud").lower() == "local":
+        from livekit.agents.types import DEFAULT_API_CONNECT_OPTIONS
+        from livekit.plugins import openai
+        from livekit.plugins.openai.tts import AudioChunkedStream
+
+        class _LocalTTS(openai.TTS):
+            # mlx-audio's /v1/audio/speech returns raw audio bytes, not OpenAI's SSE
+            # event stream. The base class picks the SSE transport for any non-OpenAI
+            # model id, so force the raw-bytes transport here. (Pinned to
+            # livekit-plugins-openai 1.6.6; AudioChunkedStream is an internal name.)
+            def synthesize(self, text, *, conn_options=DEFAULT_API_CONNECT_OPTIONS):
+                return AudioChunkedStream(tts=self, input_text=text, conn_options=conn_options)
+
+        return _LocalTTS(
+            model=os.getenv("LOCAL_TTS_MODEL", "mlx-community/Kokoro-82M-bf16"),
+            voice=os.getenv("LOCAL_TTS_VOICE", "af_heart"),
+            base_url=os.getenv("LOCAL_TTS_BASE_URL", "http://127.0.0.1:8000/v1"),
+            api_key="not-needed",
+            response_format="wav",
+        )
+    return inference.TTS("inworld/inworld-tts-2")
+
+
 @server.rtc_session(on_session_end=on_session_end, on_simulation_end=on_simulation_end)
 async def hotel_receptionist_agent(ctx: JobContext) -> None:
     await ctx.connect()
@@ -245,7 +275,7 @@ async def hotel_receptionist_agent(ctx: JobContext) -> None:
         vad=inference.VAD(model="silero"),
         stt=inference.STT("deepgram/nova-3"),
         llm=_build_llm(),
-        tts=inference.TTS("inworld/inworld-tts-2"),
+        tts=_build_tts(),
         max_tool_steps=5,
     )
 

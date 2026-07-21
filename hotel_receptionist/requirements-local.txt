@@ -1,0 +1,19 @@
+# Phase 2 — local MLX model hosting on Apple Silicon (Mac).
+# These are IN ADDITION to requirements.txt. Install into the same venv:
+#   VIRTUAL_ENV=../.venv uv pip install -r requirements-local.txt
+#
+# Servers this enables:
+#   LLM: .venv/bin/python -m mlx_lm.server    --model mlx-community/Qwen3-8B-4bit --port 8080
+#   TTS: .venv/bin/python -m mlx_audio.server --host 127.0.0.1 --port 8000   (Kokoro)
+
+mlx-lm>=0.31                 # OpenAI-compatible LLM server (mlx_lm.server)
+livekit-plugins-openai>=1.6,<2  # point LiveKit at local base_url endpoints
+
+# TTS / STT server (mlx-audio) + its web-server and audio deps
+mlx-audio>=0.4
+uvicorn
+fastapi
+python-multipart
+webrtcvad
+misaki[en]                   # Kokoro English G2P (pulls spacy; en_core_web_sm auto-downloads)
+setuptools<80                # webrtcvad imports pkg_resources; setuptools>=81 dropped it

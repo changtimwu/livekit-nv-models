@@ -184,3 +184,11 @@ stt = openai.STT(model="mlx-community/whisper-large-v3-turbo-asr-fp16",
   and **thinking is disabled** via `extra_body={"chat_template_kwargs":{"enable_thinking":False}}`
   (no `<think>`). Wired `agent.py` with a `_build_llm()` env toggle (`LLM_BACKEND=local`, default
   cloud); activated in `.env.local`. STT + TTS still cloud. **Next: TTS → local (mlx-audio Kokoro).**
+- **2026-07-21 (later 2)** — **TTS swapped to local MLX ✅.** `mlx-audio` server on :8000 + Kokoro
+  (`mlx-community/Kokoro-82M-bf16`, voice `af_heart`, 24 kHz). **Gotcha solved:** LiveKit's
+  `openai.TTS` uses an SSE transport for any non-OpenAI model id, but mlx-audio returns *raw audio
+  bytes* → wrapped in a tiny `openai.TTS` subclass that forces `AudioChunkedStream` (verified: 19
+  frames / 2.9 s decoded, both wav & pcm). Wired `agent.py` `_build_tts()` env toggle
+  (`TTS_BACKEND=local`, default cloud). Local deps captured in `requirements-local.txt` (mlx-audio,
+  uvicorn/fastapi, webrtcvad, misaki[en], `setuptools<80` for `pkg_resources`). STT still cloud.
+  **Next: STT → local (mlx-audio Whisper) — the last and hardest.**
