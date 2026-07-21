@@ -3,10 +3,14 @@
 Self-hosting experiments for the LiveKit [`hotel_receptionist`](hotel_receptionist/README.md)
 voice-agent example, worked through in phases:
 
-1. **Phase 1 — LiveKit Cloud Inference** ✅ (current) — models served through LiveKit's
+1. **Phase 1 — LiveKit Cloud Inference** ✅ — models served through LiveKit's
    hosted gateway (`inference.STT/LLM/TTS/VAD` in `agent.py`).
-2. **Phase 2 — local MLX models** on this Apple-Silicon Mac.
-3. **Phase 3 — remote NVIDIA GPU** box.
+2. **Phase 2 — local MLX models** ✅ — STT/LLM/TTS run on this Apple-Silicon Mac,
+   each component individually toggleable. Deep dive: [`phase2-local-mlx.md`](phase2-local-mlx.md).
+3. **Phase 3 — remote NVIDIA GPU** box (planned).
+
+Each model slot in `agent.py` is chosen by a `*_BACKEND` env var (default `cloud`), so you can
+run all-cloud (Phase 1), all-local (Phase 2), or any mix — just by editing `.env.local`.
 
 ---
 
@@ -67,3 +71,75 @@ cd hotel_receptionist
 set -a; . ./.env.local; set +a
 lk room list            # authenticates against your project; empty table = OK
 ```
+
+---
+
+## Phase 2 — run fully-local (MLX on Apple Silicon)
+
+Runs STT + LLM + TTS on this Mac — **no cloud inference**. (LiveKit Cloud is still used for
+room/transport, so you still need the `LIVEKIT_*` credentials from Phase 1.)
+
+| Slot | Local model | How it runs |
+|---|---|---|
+| VAD | silero | native `livekit-local-inference` (already local) |
+| STT | Qwen3-ASR (`Qwen3-ASR-1.7B-8bit`) | in-process plugin `local_stt.py` — **no server** |
+| LLM | Qwen3-8B (`Qwen3-8B-4bit`) | `mlx_lm.server` on `:8080` |
+| TTS | Kokoro (`Kokoro-82M-bf16`) | `mlx-audio` server on `:8000` |
+
+### 1. One-time: install the local extras
+
+```bash
+cd hotel_receptionist
+VIRTUAL_ENV=../.venv uv pip install -r requirements-local.txt
+```
+
+### 2. Enable the local backends
+
+In `hotel_receptionist/.env.local`, alongside the `LIVEKIT_*` credentials:
+
+```
+LLM_BACKEND=local
+LOCAL_LLM_MODEL=mlx-community/Qwen3-8B-4bit
+LOCAL_LLM_BASE_URL=http://127.0.0.1:8080/v1
+
+TTS_BACKEND=local
+LOCAL_TTS_MODEL=mlx-community/Kokoro-82M-bf16
+LOCAL_TTS_VOICE=af_heart
+LOCAL_TTS_BASE_URL=http://127.0.0.1:8000/v1
+
+STT_BACKEND=local
+LOCAL_STT_MODEL=mlx-community/Qwen3-ASR-1.7B-8bit
+LOCAL_STT_LANGUAGE=en
+```
+
+> Mix and match: comment out any one block to keep that component on cloud (e.g. drop the
+> `STT_BACKEND` block to keep snappier cloud Deepgram STT while LLM + TTS stay local).
+
+### 3. Start the two model servers (each in its own terminal)
+
+```bash
+source .venv/bin/activate
+
+# terminal 1 — LLM
+python -m mlx_lm.server --model mlx-community/Qwen3-8B-4bit --port 8080
+
+# terminal 2 — TTS
+python -m mlx_audio.server --host 127.0.0.1 --port 8000
+```
+
+(STT needs no server — it loads in-process on the first utterance.)
+
+### 4. Run the agent
+
+```bash
+source .venv/bin/activate
+cd hotel_receptionist
+python agent.py console      # or `dev` for the browser playground
+```
+
+**What to expect on local:**
+- First utterance has a ~1–2 s pause while Qwen3-ASR loads into memory.
+- Local STT is batch (VAD-gated), so replies begin *after* you finish speaking, not mid-sentence.
+- Memory footprint on M1 Max 32 GB is comfortable (~5 GB LLM + ~2 GB STT + <1 GB TTS).
+
+**Revert to cloud:** comment out the `*_BACKEND` lines in `.env.local` and restart the agent.
