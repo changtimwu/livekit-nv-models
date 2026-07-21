@@ -200,6 +200,18 @@ async def on_session_end(ctx: JobContext) -> None:
         logger.exception("error closing hotel DB")
 
 
+def _agent_lang() -> str:
+    """Conversation language for the agent: ``en`` (default) or ``zh`` (Simplified
+    Chinese / Mandarin).
+
+    Set ``AGENT_LANG=zh`` in ``.env.local`` to serve Mandarin callers. This is
+    orthogonal to the ``*_BACKEND`` cloud/local toggles — it only changes the
+    language passed to STT/TTS, the turn detector, and the system prompt, not which
+    provider serves each slot.
+    """
+    return os.getenv("AGENT_LANG", "en").strip().lower()
+
+
 def _build_llm():
     """Select the LLM backend.
 
@@ -252,6 +264,15 @@ def _build_tts():
             api_key="not-needed",
             response_format="wav",
         )
+    if _agent_lang() == "zh":
+        # inworld/inworld-tts-2 supports Chinese, but when language="zh" the voice
+        # must be one of Inworld's Chinese voices: Yichen, Xiaoyin, Xinyi, Jing.
+        # (A non-Chinese voice id with language="zh" is rejected by the provider.)
+        return inference.TTS(
+            "inworld/inworld-tts-2",
+            voice=os.getenv("ZH_TTS_VOICE", "Yichen"),
+            language="zh",
+        )
     return inference.TTS("inworld/inworld-tts-2")
 
 
@@ -263,13 +284,20 @@ def _build_stt():
     (Phase 2 / MLX). It's non-streaming, so AgentSession wraps it with the
     session VAD (StreamAdapter) — each end-of-speech utterance is transcribed once.
     """
+    lang = _agent_lang()
     if os.getenv("STT_BACKEND", "cloud").lower() == "local":
         from local_stt import MLXQwen3STT
 
+        # LOCAL_STT_LANGUAGE wins if set; otherwise follow AGENT_LANG (en/zh).
         return MLXQwen3STT(
             model=os.getenv("LOCAL_STT_MODEL", "mlx-community/Qwen3-ASR-1.7B-8bit"),
-            language=os.getenv("LOCAL_STT_LANGUAGE", "en"),
+            language=os.getenv("LOCAL_STT_LANGUAGE", lang),
         )
+    if lang == "zh":
+        # deepgram/nova-3 supports Chinese via LiveKit Inference; "zh" is a valid
+        # language code. For Mandarin/English code-switching use language="multi"
+        # (or a deepgram code-switch code) instead.
+        return inference.STT("deepgram/nova-3", language="zh")
     return inference.STT("deepgram/nova-3")
 
 
@@ -284,6 +312,17 @@ async def hotel_receptionist_agent(ctx: JobContext) -> None:
     await ui.start()
 
     userdata = Userdata(db=db)
+
+    session_kwargs = {}
+    if _agent_lang() == "zh":
+        # Default end-of-turn detection is tuned for English and mis-cuts Mandarin.
+        # The multilingual text turn detector supports zh (uses the STT transcript).
+        # NOTE: this text turn detector is deprecated in favour of the audio
+        # inference.TurnDetector; kept here per the spike request. See findings.
+        from livekit.plugins.turn_detector.multilingual import MultilingualModel
+
+        session_kwargs["turn_detection"] = MultilingualModel()
+
     session = AgentSession[Userdata](
         userdata=userdata,
         # An explicit VAD is required (not the bundled default): without it the
@@ -295,6 +334,7 @@ async def hotel_receptionist_agent(ctx: JobContext) -> None:
         llm=_build_llm(),
         tts=_build_tts(),
         max_tool_steps=5,
+        **session_kwargs,
     )
 
     await session.start(agent=HotelReceptionistAgent(), room=ctx.room)

@@ -9,9 +9,27 @@ from hotel_db import MAX_PARTY_SIZE, PRICING, format_usd
 from persona import COMMON_INSTRUCTIONS
 
 
+def _language_directive() -> str:
+    """When ``AGENT_LANG=zh`` is set, prepend an instruction to converse in
+    Simplified Chinese onto the system prompt. Tool names, their arguments, and all
+    internal logic stay in English — only the spoken conversation with the caller is
+    in Chinese. Default (``en`` / unset) adds nothing and the prompt is unchanged."""
+    if os.getenv("AGENT_LANG", "en").strip().lower() != "zh":
+        return ""
+    return (
+        "# 语言 / Language\n"
+        "Always converse with the caller in Simplified Chinese (简体中文), no matter what "
+        "language the rest of these instructions are written in. Keep every spoken reply "
+        "natural, fluent, colloquial Mandarin. Read confirmation codes, dates, prices, and "
+        "card digits back clearly. Tool names, their arguments, and all internal logic stay "
+        "in English — only your conversation with the caller is in Chinese. If the caller "
+        "speaks English, you may follow them, but otherwise default to Simplified Chinese.\n\n"
+    )
+
+
 def build_instructions() -> str:
     return f"""\
-{COMMON_INSTRUCTIONS}
+{_language_directive()}{COMMON_INSTRUCTIONS}
 
 You're the lead receptionist, holding the whole call and routing each request to the right tool. Help the caller with whatever they bring - if a request fits a tool, run it; if it's general (a policy, a fact, recalling their stay), answer from what you know.
 
