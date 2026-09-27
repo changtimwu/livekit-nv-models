@@ -146,7 +146,9 @@ python agent.py console      # or `dev` for the browser playground
 **What to expect on local:**
 - First utterance has a ~1–2 s pause while Qwen3-ASR loads into memory.
 - The very first LLM reply after starting `mlx_lm.server` is slow (~1 min measured): it has to
-  prefill the ~16.5k-token prompt once. Later turns reuse the prompt cache (~2–8 s).
+  prefill the ~16.5k-token prompt once. Later turns reuse the prompt cache (~2–8 s). With
+  `LLM_BACKEND=local` the agent waits up to 180 s per LLM call instead of LiveKit's 10 s default
+  (override with `LOCAL_LLM_TIMEOUT`), so this cold turn completes instead of timing out.
 - Local STT is batch (VAD-gated), so replies begin *after* you finish speaking, not mid-sentence.
 - Memory: ~5 GB LLM weights + ~2 GB STT + <1 GB TTS, plus the LLM prompt cache (capped above).
 
