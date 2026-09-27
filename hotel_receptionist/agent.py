@@ -29,6 +29,7 @@ from ui_view import UiView
 
 from livekit.agents import (
     Agent,
+    APIConnectOptions,
     AgentServer,
     AgentSession,
     JobContext,
@@ -47,6 +48,7 @@ from livekit.agents.evals import (
     task_completion_judge,
     tool_use_judge,
 )
+from livekit.agents.voice.agent_session import SessionConnectOptions
 
 logger = logging.getLogger("hotel-receptionist")
 
@@ -318,6 +320,16 @@ def _build_stt():
     return inference.STT("deepgram/nova-3")
 
 
+def _session_conn_options() -> SessionConnectOptions:
+    # A local LLM prefills the ~16.5k-token prompt cold on the first turn (and on
+    # each AgentTask's first turn): ~1 min on an M1 Max, far past the default 10 s
+    # timeout. Retrying doesn't help - the abandoned request keeps the server busy.
+    if os.getenv("LLM_BACKEND", "cloud").lower() != "local":
+        return SessionConnectOptions()
+    timeout = float(os.getenv("LOCAL_LLM_TIMEOUT", "180"))
+    return SessionConnectOptions(llm_conn_options=APIConnectOptions(timeout=timeout, max_retry=1))
+
+
 @server.rtc_session(on_session_end=on_session_end, on_simulation_end=on_simulation_end)
 async def hotel_receptionist_agent(ctx: JobContext) -> None:
     await ctx.connect()
@@ -350,6 +362,7 @@ async def hotel_receptionist_agent(ctx: JobContext) -> None:
         llm=_build_llm(),
         tts=_build_tts(),
         max_tool_steps=5,
+        conn_options=_session_conn_options(),
     )
 
     await session.start(agent=HotelReceptionistAgent(), room=ctx.room)

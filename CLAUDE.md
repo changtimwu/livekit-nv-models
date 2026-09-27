@@ -77,7 +77,7 @@ default intact when editing.
 
 Toggles (set in `.env.local`): `LLM_BACKEND` / `TTS_BACKEND` / `STT_BACKEND` = `cloud|local`,
 plus `LOCAL_{LLM,TTS,STT}_MODEL` / `LOCAL_{LLM,TTS}_BASE_URL` / `LOCAL_TTS_VOICE` /
-`LOCAL_STT_LANGUAGE`. Mix freely (e.g. local LLM+TTS, cloud STT). `.env.example` documents them.
+`LOCAL_STT_LANGUAGE` / `LOCAL_LLM_TIMEOUT`. Mix freely (e.g. local LLM+TTS, cloud STT). `.env.example` documents them.
 
 **Caller language:** `AGENT_LANGUAGE=en|zh` (default `en`), resolved by `current_language()` in
 `languages.py`. A profile supplies the default Kokoro voice (`af_heart` / `zf_xiaobei`), the local
@@ -106,8 +106,10 @@ python -m mlx_audio.server --host 127.0.0.1 --port 8000                     # TT
 - **Cap `mlx_lm.server`'s prompt cache (`--prompt-cache-bytes 6GB`).** The system prompt + tool
   schemas are ~16.5k tokens, so each cached conversation is ~2.5 GB of KV cache; the default keeps
   10 and hit a Metal out-of-memory crash on a 32 GB Mac within a few turns. Relatedly, the first
-  reply after a server start takes ~1 min (cold prefill), longer than the agent's default 10 s LLM
-  timeout; later turns hit the prompt cache (~2–8 s).
+  reply after a server start takes ~1 min (cold prefill), as does each `AgentTask`'s first turn;
+  later turns hit the prompt cache (~2–8 s). LiveKit's default 10 s LLM timeout would abandon that
+  cold turn and retry (piling duplicate prefills onto the server), so `_session_conn_options()`
+  raises it to `LOCAL_LLM_TIMEOUT` (default 180 s, 1 retry) when `LLM_BACKEND=local`.
 - **Kokoro needs `lang_code` on the wire.** mlx-audio defaults it to `"a"` (English G2P) and
   `openai.TTS` can't send extra body fields, so `_build_tts()` adds `lang_code` (the voice id's
   first letter: `af_heart` → `a`, `zf_xiaobei` → `z`) via an httpx transport. Mandarin also needs
