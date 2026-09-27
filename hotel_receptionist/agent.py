@@ -6,15 +6,20 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+from dotenv import load_dotenv
+
+# Load before the local imports: persona.py reads AGENT_LANGUAGE at import time.
+load_dotenv(".env.local")
+
 from benchmark import build_expected, diff_databases
 from common import Userdata
-from dotenv import load_dotenv
 from fake_data.seed import build_seed_bytes
 from hotel_db import (
     TODAY,
     HotelDB,
 )
 from instructions import build_instructions
+from languages import current_language
 from policies import build_lookup_policy_tool
 from run_artifacts import dump_run_artifacts
 from tools_restaurant import RestaurantToolsMixin
@@ -42,8 +47,6 @@ from livekit.agents.evals import (
     task_completion_judge,
     tool_use_judge,
 )
-
-load_dotenv(".env.local")
 
 logger = logging.getLogger("hotel-receptionist")
 
@@ -233,6 +236,11 @@ def _build_tts():
     speech server such as ``mlx-audio`` + Kokoro on Apple Silicon (Phase 2 / MLX).
     """
     if os.getenv("TTS_BACKEND", "cloud").lower() == "local":
+        import json
+
+        import httpx
+        import openai as openai_sdk
+
         from livekit.agents.types import DEFAULT_API_CONNECT_OPTIONS
         from livekit.plugins import openai
         from livekit.plugins.openai.tts import AudioChunkedStream
@@ -245,12 +253,49 @@ def _build_tts():
             def synthesize(self, text, *, conn_options=DEFAULT_API_CONNECT_OPTIONS):
                 return AudioChunkedStream(tts=self, input_text=text, conn_options=conn_options)
 
+        class _AddLangCode(httpx.AsyncBaseTransport):
+            # mlx-audio defaults Kokoro to lang_code "a" (American English G2P), and
+            # openai.TTS can't send extra body fields - so add it on the wire.
+            def __init__(self, lang_code: str) -> None:
+                self._lang_code = lang_code
+                self._inner = httpx.AsyncHTTPTransport()
+
+            async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+                if request.url.path.endswith("/audio/speech"):
+                    body = json.loads(await request.aread())
+                    body["lang_code"] = self._lang_code
+                    headers = {k: v for k, v in request.headers.items() if k != "content-length"}
+                    request = httpx.Request(request.method, request.url, headers=headers, json=body)
+                return await self._inner.handle_async_request(request)
+
+            async def aclose(self) -> None:
+                await self._inner.aclose()
+
+        lang = current_language()
+        model = os.getenv("LOCAL_TTS_MODEL", "mlx-community/Kokoro-82M-bf16")
+        voice = os.getenv("LOCAL_TTS_VOICE") or lang.kokoro_voice
+        base_url = os.getenv("LOCAL_TTS_BASE_URL", "http://127.0.0.1:8000/v1")
+        client = None
+        if "kokoro" in model.lower():
+            # Kokoro voice ids start with their G2P language code (af_heart -> "a").
+            if voice[0] not in lang.kokoro_lang_codes:
+                logger.warning(
+                    "LOCAL_TTS_VOICE=%s doesn't match AGENT_LANGUAGE=%s (try %s)",
+                    voice, lang.code, lang.kokoro_voice,
+                )
+            client = openai_sdk.AsyncClient(
+                api_key="not-needed",
+                base_url=base_url,
+                http_client=httpx.AsyncClient(transport=_AddLangCode(voice[0])),
+            )
+
         return _LocalTTS(
-            model=os.getenv("LOCAL_TTS_MODEL", "mlx-community/Kokoro-82M-bf16"),
-            voice=os.getenv("LOCAL_TTS_VOICE", "af_heart"),
-            base_url=os.getenv("LOCAL_TTS_BASE_URL", "http://127.0.0.1:8000/v1"),
+            model=model,
+            voice=voice,
+            base_url=base_url,
             api_key="not-needed",
             response_format="wav",
+            client=client,
         )
     return inference.TTS("inworld/inworld-tts-2")
 
@@ -268,7 +313,7 @@ def _build_stt():
 
         return MLXQwen3STT(
             model=os.getenv("LOCAL_STT_MODEL", "mlx-community/Qwen3-ASR-1.7B-8bit"),
-            language=os.getenv("LOCAL_STT_LANGUAGE", "en"),
+            language=os.getenv("LOCAL_STT_LANGUAGE") or current_language().stt_language,
         )
     return inference.STT("deepgram/nova-3")
 
@@ -282,6 +327,16 @@ async def hotel_receptionist_agent(ctx: JobContext) -> None:
     ui = UiView(ctx.room, db.connection)
     db.on_change = ui.on_change
     await ui.start()
+
+    lang = current_language()
+    if lang.code != "en":
+        cloud = [s for s in ("LLM", "TTS", "STT") if os.getenv(f"{s}_BACKEND", "cloud") != "local"]
+        if cloud:
+            # Cloud-stack language support is still unverified (GitHub issue #1).
+            logger.warning(
+                "AGENT_LANGUAGE=%s is only tuned for local backends; cloud %s may not follow",
+                lang.code, "/".join(cloud),
+            )
 
     userdata = Userdata(db=db)
     session = AgentSession[Userdata](

@@ -3,7 +3,7 @@
 #   VIRTUAL_ENV=../.venv uv pip install -r requirements-local.txt
 #
 # Servers this enables:
-#   LLM: .venv/bin/python -m mlx_lm.server    --model mlx-community/Qwen3-8B-4bit --port 8080
+#   LLM: .venv/bin/python -m mlx_lm.server    --model mlx-community/Qwen3-8B-4bit --port 8080 --prompt-cache-bytes 6GB
 #   TTS: .venv/bin/python -m mlx_audio.server --host 127.0.0.1 --port 8000   (Kokoro)
 
 mlx-lm>=0.31                 # OpenAI-compatible LLM server (mlx_lm.server)
@@ -16,4 +16,5 @@ fastapi
 python-multipart
 webrtcvad
 misaki[en]                   # Kokoro English G2P (pulls spacy; en_core_web_sm auto-downloads)
+misaki[zh]                   # Kokoro Mandarin G2P, for AGENT_LANGUAGE=zh (jieba + pypinyin)
 setuptools<80                # webrtcvad imports pkg_resources; setuptools>=81 dropped it
