@@ -175,3 +175,10 @@ for the **local** backends only — with any cloud backend the agent logs a warn
 cloud-stack Mandarin support is still open (GitHub issue #1). Known limit: Qwen3-8B follows
 the Mandarin directive well but, as in English, sometimes lists every option and price at
 once instead of narrowing progressively.
+
+## Web front-end (remote access)
+
+`web/` is a password-protected browser front-end (Next.js, from LiveKit's agent starter) for
+calling the local agent from anywhere. It's published at `https://hotelbooking.wormhole.work`
+through a Cloudflare Tunnel. Setup, configuration and known limits: [`web/README-hotel.md`](web/README-hotel.md);
+plan: GitHub issue #12.
