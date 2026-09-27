@@ -52,6 +52,12 @@ from livekit.agents.voice.agent_session import SessionConnectOptions
 
 logger = logging.getLogger("hotel-receptionist")
 
+if "local" in (os.getenv("LLM_BACKEND", "").lower(), os.getenv("TTS_BACKEND", "").lower()):
+    # LiveKit plugins must register on the main thread, and `console` runs the job
+    # on a worker thread - so import here, not lazily inside _build_llm/_build_tts.
+    # (livekit-plugins-openai is only in requirements-local.txt, hence the guard.)
+    from livekit.plugins import openai as _openai_plugin  # noqa: F401
+
 
 class HotelReceptionistAgent(RoomToolsMixin, RestaurantToolsMixin, ServicesToolsMixin, Agent):
     def __init__(self) -> None:
