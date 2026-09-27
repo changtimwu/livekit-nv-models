@@ -82,7 +82,7 @@ room/transport, so you still need the `LIVEKIT_*` credentials from Phase 1.)
 | Slot | Local model | How it runs |
 |---|---|---|
 | VAD | silero | native `livekit-local-inference` (already local) |
-| STT | Qwen3-ASR (`Qwen3-ASR-1.7B-8bit`) | in-process plugin `local_stt.py` — **no server** |
+| STT | English: Nemotron 3.5 ASR **Streaming** (`nemotron-3.5-asr-streaming-0.6b`) · Mandarin: Qwen3-ASR (`Qwen3-ASR-1.7B-8bit`) | in-process plugins in `local_stt.py` — **no server** |
 | LLM | Qwen3-8B (`Qwen3-8B-4bit`) | `mlx_lm.server` on `:8080` |
 | TTS | Kokoro (`Kokoro-82M-bf16`) | `mlx-audio` server on `:8000` |
 
@@ -107,11 +107,12 @@ LOCAL_TTS_MODEL=mlx-community/Kokoro-82M-bf16
 LOCAL_TTS_BASE_URL=http://127.0.0.1:8000/v1
 
 STT_BACKEND=local
-LOCAL_STT_MODEL=mlx-community/Qwen3-ASR-1.7B-8bit
 ```
 
-The voice and STT language default from `AGENT_LANGUAGE` (see "Caller language" below);
-set `LOCAL_TTS_VOICE` / `LOCAL_STT_LANGUAGE` only to override them.
+The voice, STT model and STT language default from `AGENT_LANGUAGE` (see "Caller language"
+below); set `LOCAL_TTS_VOICE` / `LOCAL_STT_MODEL` / `LOCAL_STT_LANGUAGE` only to override them.
+Any `LOCAL_STT_MODEL` containing `nemotron` uses the streaming plugin; anything else uses batch
+Qwen3-ASR.
 
 > Mix and match: comment out any one block to keep that component on cloud (e.g. drop the
 > `STT_BACKEND` block to keep snappier cloud Deepgram STT while LLM + TTS stay local).
@@ -128,7 +129,8 @@ python -m mlx_lm.server --model mlx-community/Qwen3-8B-4bit --port 8080 --prompt
 python -m mlx_audio.server --host 127.0.0.1 --port 8000
 ```
 
-(STT needs no server — it loads in-process on the first utterance.)
+(STT needs no server — it loads in-process when the call starts; Nemotron is 1.3 GB, downloaded on
+first use.)
 
 > **Keep `--prompt-cache-bytes`.** The agent's system prompt + tool schemas are ~16.5k
 > tokens, so each cached conversation holds ~2.5 GB of KV cache. `mlx_lm.server` keeps 10 by
@@ -144,13 +146,17 @@ python agent.py console      # or `dev` for the browser playground
 ```
 
 **What to expect on local:**
-- First utterance has a ~1–2 s pause while Qwen3-ASR loads into memory.
 - The very first LLM reply after starting `mlx_lm.server` is slow (~1 min measured): it has to
   prefill the ~16.5k-token prompt once. Later turns reuse the prompt cache (~2–8 s). With
   `LLM_BACKEND=local` the agent waits up to 180 s per LLM call instead of LiveKit's 10 s default
   (override with `LOCAL_LLM_TIMEOUT`), so this cold turn completes instead of timing out.
-- Local STT is batch (VAD-gated), so replies begin *after* you finish speaking, not mid-sentence.
-- Memory: ~5 GB LLM weights + ~2 GB STT + <1 GB TTS, plus the LLM prompt cache (capped above).
+- **English STT streams:** Nemotron transcribes while you talk (interim text every ~320 ms) and
+  the final transcript is ready ~40–75 ms after the VAD detects end-of-speech, vs ~0.2–0.7 s for
+  batch Qwen3-ASR (and ~0.8–1.3 s while the LLM is busy). Mandarin still uses batch Qwen3-ASR,
+  because Nemotron's Mandarin is unusable. Details and benchmarks: GitHub issue #6.
+- Turn latency is still dominated by the LLM (≈4–10 s per reply in a real call on an M1 Max).
+- Memory: ~5 GB LLM weights + ~1.3 GB STT (Nemotron; ~2 GB for Qwen3-ASR) + <1 GB TTS, plus the
+  LLM prompt cache (capped above).
 
 **Revert to cloud:** comment out the `*_BACKEND` lines in `.env.local` and restart the agent.
 
@@ -162,7 +168,7 @@ Set `AGENT_LANGUAGE` in `.env.local` to `en` (default) or `zh`:
 |---|---|---|
 | Prompt | unchanged upstream English prompt | same English prompt + a Mandarin directive (`hotel_receptionist/languages.py`) |
 | Kokoro voice | `af_heart` | `zf_xiaobei` (also `zf_xiaoni`, `zf_xiaoxiao`, `zf_xiaoyi`, `zm_yunjian`, `zm_yunxi`, `zm_yunxia`, `zm_yunyang`) |
-| STT | Qwen3-ASR (auto-detects; label `en`) | Qwen3-ASR (auto-detects; label `zh`) |
+| STT | Nemotron 3.5 streaming (`en-US` prompt) | Qwen3-ASR batch (auto-detects; label `zh`) |
 
 `zh` needs `misaki[zh]` (in `requirements-local.txt`) for Kokoro's Mandarin G2P, and is tuned
 for the **local** backends only — with any cloud backend the agent logs a warning, since
