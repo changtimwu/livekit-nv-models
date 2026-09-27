@@ -104,13 +104,14 @@ LOCAL_LLM_BASE_URL=http://127.0.0.1:8080/v1
 
 TTS_BACKEND=local
 LOCAL_TTS_MODEL=mlx-community/Kokoro-82M-bf16
-LOCAL_TTS_VOICE=af_heart
 LOCAL_TTS_BASE_URL=http://127.0.0.1:8000/v1
 
 STT_BACKEND=local
 LOCAL_STT_MODEL=mlx-community/Qwen3-ASR-1.7B-8bit
-LOCAL_STT_LANGUAGE=en
 ```
+
+The voice and STT language default from `AGENT_LANGUAGE` (see "Caller language" below);
+set `LOCAL_TTS_VOICE` / `LOCAL_STT_LANGUAGE` only to override them.
 
 > Mix and match: comment out any one block to keep that component on cloud (e.g. drop the
 > `STT_BACKEND` block to keep snappier cloud Deepgram STT while LLM + TTS stay local).
@@ -121,13 +122,18 @@ LOCAL_STT_LANGUAGE=en
 source .venv/bin/activate
 
 # terminal 1 — LLM
-python -m mlx_lm.server --model mlx-community/Qwen3-8B-4bit --port 8080
+python -m mlx_lm.server --model mlx-community/Qwen3-8B-4bit --port 8080 --prompt-cache-bytes 6GB
 
 # terminal 2 — TTS
 python -m mlx_audio.server --host 127.0.0.1 --port 8000
 ```
 
 (STT needs no server — it loads in-process on the first utterance.)
+
+> **Keep `--prompt-cache-bytes`.** The agent's system prompt + tool schemas are ~16.5k
+> tokens, so each cached conversation holds ~2.5 GB of KV cache. `mlx_lm.server` keeps 10 by
+> default (~25 GB) and crashed with a Metal out-of-memory error on a 32 GB Mac after a few
+> turns. 6 GB keeps two or three conversations warm.
 
 ### 4. Run the agent
 
@@ -139,7 +145,25 @@ python agent.py console      # or `dev` for the browser playground
 
 **What to expect on local:**
 - First utterance has a ~1–2 s pause while Qwen3-ASR loads into memory.
+- The very first LLM reply after starting `mlx_lm.server` is slow (~1 min measured): it has to
+  prefill the ~16.5k-token prompt once. Later turns reuse the prompt cache (~2–8 s).
 - Local STT is batch (VAD-gated), so replies begin *after* you finish speaking, not mid-sentence.
-- Memory footprint on M1 Max 32 GB is comfortable (~5 GB LLM + ~2 GB STT + <1 GB TTS).
+- Memory: ~5 GB LLM weights + ~2 GB STT + <1 GB TTS, plus the LLM prompt cache (capped above).
 
 **Revert to cloud:** comment out the `*_BACKEND` lines in `.env.local` and restart the agent.
+
+### Caller language (English / Mandarin)
+
+Set `AGENT_LANGUAGE` in `.env.local` to `en` (default) or `zh`:
+
+| | `en` | `zh` |
+|---|---|---|
+| Prompt | unchanged upstream English prompt | same English prompt + a Mandarin directive (`hotel_receptionist/languages.py`) |
+| Kokoro voice | `af_heart` | `zf_xiaobei` (also `zf_xiaoni`, `zf_xiaoxiao`, `zf_xiaoyi`, `zm_yunjian`, `zm_yunxi`, `zm_yunxia`, `zm_yunyang`) |
+| STT | Qwen3-ASR (auto-detects; label `en`) | Qwen3-ASR (auto-detects; label `zh`) |
+
+`zh` needs `misaki[zh]` (in `requirements-local.txt`) for Kokoro's Mandarin G2P, and is tuned
+for the **local** backends only — with any cloud backend the agent logs a warning, since
+cloud-stack Mandarin support is still open (GitHub issue #1). Known limit: Qwen3-8B follows
+the Mandarin directive well but, as in English, sometimes lists every option and price at
+once instead of narrowing progressively.
