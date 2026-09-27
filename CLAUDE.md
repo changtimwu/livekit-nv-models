@@ -127,9 +127,18 @@ python -m mlx_audio.server --host 127.0.0.1 --port 8000                     # TT
   `misaki[zh]`. Kokoro's zh normalizer reads digits (`240美元`) correctly.
 - **`load_dotenv(".env.local")` must run before the local imports in `agent.py`**: `persona.py`
   builds `COMMON_INSTRUCTIONS` at import time and reads `AGENT_LANGUAGE` then.
-- **Local LLM = Qwen3, not Gemma:** `mlx_lm.server`'s tool-call parser is Qwen-centric, and this
-  agent is tool-heavy. Qwen3 "thinking" is disabled via
-  `extra_body={"chat_template_kwargs": {"enable_thinking": False}}`.
+- **Local LLM = Qwen3-8B.** Survey in GitHub issue #8: Gemma 4 E4B, Qwen3-4B-Instruct-2507 and
+  Qwen3.5 2B/4B/9B all chat fine but never call the zero-argument routing tools
+  (`start_room_booking` → `BookRoomTask`) in the 33-tool / 16.5k-token prompt, and several claim
+  bookings that never happened. Qwen3-8B completes a booking in English. It is not reliable in
+  Mandarin: it invented a confirmation code once. Swapping the local LLM needs a full multi-turn
+  booking check against the DB, not just a single tool-call probe.
+- **Thinking is disabled for every local model** via
+  `extra_body={"chat_template_kwargs": {"enable_thinking": False}}`. Qwen3 and Gemma 4 think by
+  default under `mlx_lm.server`, and the reply lands in a separate `reasoning` field.
+- **Qwen3.5 templates reject non-leading system messages**, which LiveKit inserts at handoffs.
+  `_single_system_client()` rewrites them in place as labeled user notes. Merging them into the
+  first system message would change the prompt prefix and defeat the prompt cache.
 - ⚠️ The root-level `*_hosting_hotel_receptionist_example_locally.md` is an old Copilot export with
   **hallucinated** advice (e.g. a fake `simplismart` TTS plugin). Do not trust it; ground model
   work in real docs / installed code. (Nemotron streaming ASR itself is real and now used, via

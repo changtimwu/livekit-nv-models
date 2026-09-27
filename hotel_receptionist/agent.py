@@ -210,24 +210,69 @@ def _build_llm():
 
     Default: LiveKit Cloud Inference (``google/gemma-4-31b-it``).
     Set ``LLM_BACKEND=local`` in ``.env.local`` to use a local OpenAI-compatible
-    server such as ``mlx_lm.server`` on Apple Silicon (Phase 2 / MLX). Override the
+    server such as ``mlx_lm.server`` on Apple Silicon (Phase 2 / MLX); default model
+    Qwen3-8B - the only small local model that drove the tool-based booking flow
+    (survey: GitHub issue #8). Override the
     model/endpoint with ``LOCAL_LLM_MODEL`` / ``LOCAL_LLM_BASE_URL``.
     """
     if os.getenv("LLM_BACKEND", "cloud").lower() == "local":
         from livekit.plugins import openai
 
         model = os.getenv("LOCAL_LLM_MODEL", "mlx-community/Qwen3-8B-4bit")
-        extra_body = {}
-        if "qwen3" in model.lower():
-            # Qwen3 defaults to "thinking" mode (slow, rambly) — disable it for voice.
-            extra_body = {"chat_template_kwargs": {"enable_thinking": False}}
+        base_url = os.getenv("LOCAL_LLM_BASE_URL", "http://127.0.0.1:8080/v1")
+        client = None
+        if "qwen3.5" in model.lower():
+            client = _single_system_client(base_url)
         return openai.LLM(
             model=model,
-            base_url=os.getenv("LOCAL_LLM_BASE_URL", "http://127.0.0.1:8080/v1"),
+            base_url=base_url,
+            client=client,
             api_key="not-needed",
-            extra_body=extra_body,
+            # Qwen3 (and Gemma 4) "think" by default under mlx_lm.server (slow,
+            # rambly, and the reply lands in a separate reasoning field) - disable it
+            # for voice. Templates without the flag just ignore it.
+            extra_body={"chat_template_kwargs": {"enable_thinking": False}},
         )
     return inference.LLM("google/gemma-4-31b-it")
+
+
+def _single_system_client(base_url: str):
+    """OpenAI client whose requests keep only the leading system message.
+
+    Qwen3.5's chat template raises "System message must be at the beginning", but
+    LiveKit inserts system messages mid-conversation (AgentTask handoffs,
+    generate_reply(instructions=...)). Rewrite each later one in place as a labeled
+    user note; merging it into the first system message would change the ~16.5k-token
+    prompt prefix and defeat mlx_lm.server's prompt cache.
+    """
+    import json
+
+    import httpx
+    import openai as openai_sdk
+
+    class _Rewrite(httpx.AsyncBaseTransport):
+        def __init__(self) -> None:
+            self._inner = httpx.AsyncHTTPTransport()
+
+        async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+            if request.url.path.endswith("/chat/completions"):
+                body = json.loads(await request.aread())
+                for i, m in enumerate(body.get("messages", [])):
+                    if i and m.get("role") == "system":
+                        m["role"] = "user"
+                        m["content"] = f"[Instruction from the system, not the caller] {m['content']}"
+                headers = {k: v for k, v in request.headers.items() if k != "content-length"}
+                request = httpx.Request(request.method, request.url, headers=headers, json=body)
+            return await self._inner.handle_async_request(request)
+
+        async def aclose(self) -> None:
+            await self._inner.aclose()
+
+    return openai_sdk.AsyncClient(
+        api_key="not-needed",
+        base_url=base_url,
+        http_client=httpx.AsyncClient(transport=_Rewrite(), timeout=httpx.Timeout(600, connect=10)),
+    )
 
 
 def _build_tts():
