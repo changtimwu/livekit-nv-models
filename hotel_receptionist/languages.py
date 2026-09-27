@@ -4,7 +4,8 @@ The prompts stay in English for every language (they are shared with upstream an
 the model follows them fine); a non-English profile appends a directive telling the
 agent to speak that language and how to adapt the English-specific speaking rules.
 Each profile also carries defaults for the local (Phase 2 / MLX) voice slots;
-explicit ``LOCAL_TTS_VOICE`` / ``LOCAL_STT_LANGUAGE`` env vars still win.
+explicit ``LOCAL_TTS_VOICE`` / ``LOCAL_STT_MODEL`` / ``LOCAL_STT_LANGUAGE`` env vars
+still win.
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ from dataclasses import dataclass
 class LanguageProfile:
     code: str
     stt_language: str  # label reported by the local STT (Qwen3-ASR auto-detects)
+    stt_model: str  # default local STT; nemotron = streaming, else batch Qwen3-ASR
     kokoro_voice: str  # Kokoro voice ids are prefixed with their G2P lang code
     kokoro_lang_codes: str  # voice prefixes that fit this language
     instructions: str  # appended to COMMON_INSTRUCTIONS ("" = none)
@@ -43,6 +45,8 @@ PROFILES: dict[str, LanguageProfile] = {
     "en": LanguageProfile(
         code="en",
         stt_language="en",
+        # Streaming: final transcript ~0.1 s after end-of-speech (issue #6).
+        stt_model="mlx-community/nemotron-3.5-asr-streaming-0.6b",
         kokoro_voice="af_heart",
         kokoro_lang_codes="ab",
         instructions="",
@@ -50,6 +54,8 @@ PROFILES: dict[str, LanguageProfile] = {
     "zh": LanguageProfile(
         code="zh",
         stt_language="zh",
+        # Batch: Nemotron's Mandarin is unusable; Qwen3-ASR is the most accurate.
+        stt_model="mlx-community/Qwen3-ASR-1.7B-8bit",
         kokoro_voice="zf_xiaobei",
         kokoro_lang_codes="z",
         instructions=_ZH_INSTRUCTIONS,

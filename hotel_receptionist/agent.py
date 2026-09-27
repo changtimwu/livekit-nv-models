@@ -302,21 +302,26 @@ def _build_tts():
     return inference.TTS("inworld/inworld-tts-2")
 
 
-def _build_stt():
+def _build_stt(vad):
     """Select the STT backend.
 
     Default: LiveKit Cloud Inference (``deepgram/nova-3``).
-    Set ``STT_BACKEND=local`` in ``.env.local`` to use local mlx-audio Qwen3-ASR
-    (Phase 2 / MLX). It's non-streaming, so AgentSession wraps it with the
-    session VAD (StreamAdapter) — each end-of-speech utterance is transcribed once.
+    Set ``STT_BACKEND=local`` in ``.env.local`` for local mlx-audio STT (Phase 2 /
+    MLX). The model defaults from ``AGENT_LANGUAGE`` (override: ``LOCAL_STT_MODEL``):
+    a Nemotron streaming model gets the streaming plugin (interim transcripts, final
+    right after end-of-speech; segmented by its own stream of ``vad``); anything
+    else is batch Qwen3-ASR, which AgentSession wraps with the session VAD
+    (StreamAdapter) - each end-of-speech utterance is transcribed once.
     """
     if os.getenv("STT_BACKEND", "cloud").lower() == "local":
-        from local_stt import MLXQwen3STT
+        from local_stt import MLXNemotronStreamingSTT, MLXQwen3STT
 
-        return MLXQwen3STT(
-            model=os.getenv("LOCAL_STT_MODEL", "mlx-community/Qwen3-ASR-1.7B-8bit"),
-            language=os.getenv("LOCAL_STT_LANGUAGE") or current_language().stt_language,
-        )
+        lang = current_language()
+        model = os.getenv("LOCAL_STT_MODEL") or lang.stt_model
+        language = os.getenv("LOCAL_STT_LANGUAGE") or lang.stt_language
+        if "nemotron" in model.lower():
+            return MLXNemotronStreamingSTT(vad=vad, model=model, language=language)
+        return MLXQwen3STT(model=model, language=language)
     return inference.STT("deepgram/nova-3")
 
 
@@ -351,14 +356,15 @@ async def hotel_receptionist_agent(ctx: JobContext) -> None:
             )
 
     userdata = Userdata(db=db)
+    # An explicit VAD is required (not the bundled default): without it the
+    # speaking anchor falls back to the STT stream clock, which drifts into the
+    # future across a long call / nested-task switch and makes the turn-commit
+    # logic sleep for that offset (~the elapsed call time) before replying.
+    vad = inference.VAD(model="silero")
     session = AgentSession[Userdata](
         userdata=userdata,
-        # An explicit VAD is required (not the bundled default): without it the
-        # speaking anchor falls back to the STT stream clock, which drifts into the
-        # future across a long call / nested-task switch and makes the turn-commit
-        # logic sleep for that offset (~the elapsed call time) before replying.
-        vad=inference.VAD(model="silero"),
-        stt=_build_stt(),
+        vad=vad,
+        stt=_build_stt(vad),
         llm=_build_llm(),
         tts=_build_tts(),
         max_tool_steps=5,
