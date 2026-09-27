@@ -72,7 +72,7 @@ default intact when editing.
 |---|---|---|
 | LLM | `inference.LLM("google/gemma-4-31b-it")` | `openai.LLM(base_url=…)` → `mlx_lm.server` on `:8080` |
 | TTS | `inference.TTS("inworld/inworld-tts-2")` | `openai.TTS` subclass → `mlx-audio` server on `:8000` (Kokoro) |
-| STT | `inference.STT("deepgram/nova-3")` | `MLXQwen3STT` in `local_stt.py` (in-process, **no server**) |
+| STT | `inference.STT("deepgram/nova-3")` | `local_stt.py`, in-process, **no server**: `MLXNemotronStreamingSTT` (en, streaming) / `MLXQwen3STT` (zh, batch) |
 | VAD | `inference.VAD("silero")` — already runs locally (native `livekit-local-inference`) | (unchanged) |
 
 Toggles (set in `.env.local`): `LLM_BACKEND` / `TTS_BACKEND` / `STT_BACKEND` = `cloud|local`,
@@ -81,8 +81,9 @@ plus `LOCAL_{LLM,TTS,STT}_MODEL` / `LOCAL_{LLM,TTS}_BASE_URL` / `LOCAL_TTS_VOICE
 
 **Caller language:** `AGENT_LANGUAGE=en|zh` (default `en`), resolved by `current_language()` in
 `languages.py`. A profile supplies the default Kokoro voice (`af_heart` / `zf_xiaobei`), the local
-STT language label, and a prompt directive. Explicit `LOCAL_TTS_VOICE` / `LOCAL_STT_LANGUAGE`
-still override the profile, so leave them unset in `.env.local` or `zh` gets the English voice.
+STT model + language label, and a prompt directive. Explicit `LOCAL_TTS_VOICE` / `LOCAL_STT_MODEL` /
+`LOCAL_STT_LANGUAGE` still override the profile, so leave them unset in `.env.local` or `zh` gets
+the English voice (and `en` loses streaming STT).
 `zh` is tuned for the local backends only: with a cloud backend the agent just logs a warning
 (cloud Mandarin support is GitHub issue #1). Adding a language = add a `PROFILES` entry.
 
@@ -100,6 +101,16 @@ python -m mlx_audio.server --host 127.0.0.1 --port 8000                     # TT
 - **STT is a custom in-process plugin, not the mlx-audio server.** mlx-audio's HTTP server
   crashes on Qwen3-ASR (`no Stream(gpu,0) in current thread`; MLX streams are thread-local).
   `local_stt.py` loads+runs the model on one dedicated thread to avoid that.
+- **Streaming STT = Nemotron 3.5 ASR Streaming, English only** (issue #6 has the full survey +
+  benchmarks). Most mlx-audio ASRs' `stream_generate` only streams *output* tokens after
+  encoding the whole clip; only `nemotron_asr` and `voxtral_realtime` take audio incrementally
+  (`create_streaming_session()` → `feed`/`step`/`close`). Voxtral 4B is the most accurate but runs at
+  2.2× real time on an M1 Max while the LLM generates, so it was rejected. Nemotron's Mandarin
+  is unusable, so `zh` keeps batch Qwen3-ASR. `MLXNemotronStreamingSTT` segments utterances with
+  its own stream of the session VAD (like `StreamAdapter`): feed continuously, emit INTERIM, and
+  on VAD end-of-speech `close()` → drain → FINAL → new session. `_drain()` reads session
+  internals (`step()` only ingests a new chunk once encoded frames are used up) — pinned to
+  mlx-audio 0.5.x.
 - **LiveKit's `openai.TTS` uses an SSE transport for non-OpenAI model ids**, but mlx-audio
   returns raw audio bytes — `_build_tts()` wraps it in a subclass that forces the byte-stream
   path. (Internal `AudioChunkedStream`, pinned to `livekit-plugins-openai` 1.6.x.)
@@ -120,8 +131,9 @@ python -m mlx_audio.server --host 127.0.0.1 --port 8000                     # TT
   agent is tool-heavy. Qwen3 "thinking" is disabled via
   `extra_body={"chat_template_kwargs": {"enable_thinking": False}}`.
 - ⚠️ The root-level `*_hosting_hotel_receptionist_example_locally.md` is an old Copilot export with
-  **hallucinated** advice (a fake `simplismart` TTS plugin, `nemotron-3-asr`). Do not trust it;
-  ground model work in real docs / installed code.
+  **hallucinated** advice (e.g. a fake `simplismart` TTS plugin). Do not trust it; ground model
+  work in real docs / installed code. (Nemotron streaming ASR itself is real and now used, via
+  mlx-audio's `nemotron_asr` — not the way that export describes.)
 
 ## Agent architecture (the `hotel_receptionist/` example)
 
