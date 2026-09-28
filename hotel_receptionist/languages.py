@@ -1,38 +1,25 @@
-"""Caller-facing language profiles, selected with ``AGENT_LANGUAGE`` (default ``en``).
+"""Hotel prompt directives per caller language, selected with ``AGENT_LANGUAGE`` (default ``en``).
 
-The prompts stay in English for every language (they are shared with upstream and
-the model follows them fine); a non-English profile appends a directive telling the
-agent to speak that language and how to adapt the English-specific speaking rules.
-Each profile also carries defaults for the local (Phase 2 / MLX) voice slots;
-explicit ``LOCAL_TTS_VOICE`` / ``LOCAL_STT_MODEL`` / ``LOCAL_STT_LANGUAGE`` env vars
-still win. The ``cloud_*`` fields configure LiveKit Inference STT / TTS for that
-language (``None`` = leave the upstream default untouched, as ``en`` does).
+The prompts stay in English for every language (they are shared with upstream and the model
+follows them fine); a non-English language appends a directive telling the agent to speak it
+and how to adapt the English-specific speaking rules. Model / voice defaults per language
+live in ``voiceshared.profiles`` (shared with the other apps).
 
-Profiles: ``en``, ``zh`` (mainland Mandarin, Simplified) and ``zh-tw`` (Taiwan Mandarin,
+Languages: ``en``, ``zh`` (mainland Mandarin, Simplified) and ``zh-tw`` (Taiwan Mandarin,
 Traditional; ``zh_tw`` also accepted). Evaluation: GitHub issue #1.
 """
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
+
+from voiceshared.profiles import current_profile
 
 
 @dataclass(frozen=True)
-class LanguageProfile:
+class HotelLanguage:
     code: str
-    stt_language: str  # label reported by the local STT (Qwen3-ASR auto-detects)
-    stt_model: str  # default local STT; nemotron = streaming, else batch Qwen3-ASR
-    kokoro_voice: str  # Kokoro voice ids are prefixed with their G2P lang code
-    kokoro_lang_codes: str  # voice prefixes that fit this language
     instructions: str  # appended to COMMON_INSTRUCTIONS ("" = none)
-    # LiveKit Inference (cloud) settings; None = don't pass (upstream default)
-    cloud_llm_model: str | None = None
-    cloud_stt_model: str | None = None
-    cloud_stt_language: str | None = None
-    cloud_tts_model: str | None = None
-    cloud_tts_voice: str | None = None
-    cloud_tts_language: str | None = None
 
 
 _ZH_INSTRUCTIONS = """
@@ -72,52 +59,9 @@ The speaking rules above were written for English; apply them in Taiwan Mandarin
 - Tool arguments keep the formats the tools expect (ISO dates, Latin-letter emails, numbers as digits) - only the spoken reply is Chinese."""
 
 
-PROFILES: dict[str, LanguageProfile] = {
-    "en": LanguageProfile(
-        code="en",
-        stt_language="en",
-        # Streaming: final transcript ~0.1 s after end-of-speech (issue #6).
-        stt_model="mlx-community/nemotron-3.5-asr-streaming-0.6b",
-        kokoro_voice="af_heart",
-        kokoro_lang_codes="ab",
-        instructions="",
-    ),
-    "zh": LanguageProfile(
-        code="zh",
-        stt_language="zh",
-        # Batch: Nemotron's Mandarin is unusable; Qwen3-ASR is the most accurate.
-        stt_model="mlx-community/Qwen3-ASR-1.7B-8bit",
-        kokoro_voice="zf_xiaobei",
-        kokoro_lang_codes="z",
-        instructions=_ZH_INSTRUCTIONS,
-        # Cloud picks from the #1 evaluation (LiveKit Inference only).
-        cloud_stt_model="assemblyai/u3-rt-pro",  # best mainland CER; Simplified output
-        cloud_stt_language="zh",
-        cloud_tts_model="inworld/inworld-tts-2",
-        cloud_tts_voice="Yichen",  # Inworld zh voices: Yichen / Xiaoyin / Xinyi / Jing
-        cloud_tts_language="zh",
-    ),
-    "zh-tw": LanguageProfile(
-        code="zh-TW",
-        stt_language="zh-TW",
-        stt_model="mlx-community/Qwen3-ASR-1.7B-8bit",
-        # Kokoro has no Taiwan-accent voice; the mainland voice is the closest local option.
-        kokoro_voice="zf_xiaobei",
-        kokoro_lang_codes="z",
-        instructions=_ZH_TW_INSTRUCTIONS,
-        # Cloud picks from the #1 evaluation (LiveKit Inference only).
-        cloud_stt_model="deepgram/nova-3",  # the only hosted STT that outputs Traditional
-        cloud_stt_language="zh-TW",
-        # Cartesia's default voice was judged the most Taiwanese-sounding by ear. The
-        # default is chosen server-side, so it can change without a code change.
-        cloud_tts_model="cartesia/sonic-3.6",
-        cloud_tts_language="zh",
-    ),
-}
+_INSTRUCTIONS = {"en": "", "zh": _ZH_INSTRUCTIONS, "zh-tw": _ZH_TW_INSTRUCTIONS}
 
 
-def current_language() -> LanguageProfile:
-    code = os.getenv("AGENT_LANGUAGE", "en").strip().lower().replace("_", "-")
-    if code not in PROFILES:
-        raise ValueError(f"AGENT_LANGUAGE={code!r} is not one of {sorted(PROFILES)}")
-    return PROFILES[code]
+def current_language() -> HotelLanguage:
+    profile = current_profile()
+    return HotelLanguage(code=profile.code, instructions=_INSTRUCTIONS[profile.key])
