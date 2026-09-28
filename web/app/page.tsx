@@ -9,6 +9,10 @@ const tokenEndpoint = isHomepageAgent
   ? 'https://livekit.com/api/homepage-agent/token'
   : '/api/token';
 
+// Render per request so each server instance can read its own AGENT_NAME / SITE_TAGLINE
+// (one build serves both the local-model demo and the cloud zh-tw demo).
+export const dynamic = 'force-dynamic';
+
 export default function Page() {
   return (
     <App
@@ -16,6 +20,7 @@ export default function Page() {
       tokenEndpoint={tokenEndpoint}
       agentName={process.env.AGENT_NAME}
       isVideoInputSupported={false}
+      tagline={process.env.SITE_TAGLINE}
     />
   );
 }

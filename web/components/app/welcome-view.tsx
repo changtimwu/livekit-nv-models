@@ -20,11 +20,13 @@ function WelcomeImage() {
 
 interface WelcomeViewProps {
   startButtonText: string;
+  tagline?: string;
   onStartCall: () => void;
 }
 
 export const WelcomeView = ({
   startButtonText,
+  tagline,
   onStartCall,
   ref,
 }: React.ComponentProps<'div'> & WelcomeViewProps) => {
@@ -36,6 +38,7 @@ export const WelcomeView = ({
         <p className="text-foreground max-w-prose pt-1 leading-6 font-medium">
           Call the front desk of The LiveKit Hotel
         </p>
+        {tagline && <p className="text-muted-foreground pt-1 text-sm">{tagline}</p>}
 
         <Button
           size="lg"

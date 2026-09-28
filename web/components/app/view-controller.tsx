@@ -29,9 +29,10 @@ const VIEW_MOTION_PROPS = {
 
 interface ViewControllerProps {
   isVideoInputSupported: boolean;
+  tagline?: string;
 }
 
-export function ViewController({ isVideoInputSupported }: ViewControllerProps) {
+export function ViewController({ isVideoInputSupported, tagline }: ViewControllerProps) {
   const { isConnected, start } = useSessionContext();
   const agent = useAgent();
   const { resolvedTheme } = useTheme();
@@ -44,6 +45,7 @@ export function ViewController({ isVideoInputSupported }: ViewControllerProps) {
           key="welcome"
           {...VIEW_MOTION_PROPS}
           startButtonText="Start call"
+          tagline={tagline}
           onStartCall={start}
         />
       )}

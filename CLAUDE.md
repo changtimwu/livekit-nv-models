@@ -90,6 +90,13 @@ Explicit `LOCAL_TTS_VOICE` / `LOCAL_STT_MODEL` / `LOCAL_STT_LANGUAGE` still over
 leave them unset in `.env.local` or `zh` gets the English voice (and `en` loses streaming STT).
 Cloud picks and their evaluation (LiveKit Inference only) are in GitHub issue #1.
 Adding a language = add a `PROFILES` entry.
+
+**Worker env options:**
+- `AGENT_NAME` selects explicit dispatch; empty = automatic.
+- `AGENT_HTTP_PORT` sets the health port; the prod default 8081 clashes with a second worker.
+- `AGENT_IDLE_PROCESSES` sets the number of pre-warmed processes; the prod default is one per CPU core, each loading the whole agent.
+
+`deploy/demos.sh` runs the two public web demos: a local worker `hotel-local` and a cloud zh-tw worker `hotel-cloud-zhtw`.
 - **Phone numbers must be E.164 for LiveKit's `GetPhoneNumberTask`** (`^\+?[1-9]\d{6,14}$`), which
   rejects any local number starting with 0. The zh / zh-tw directives tell the model to pass
   `+86…` / `+886…`.

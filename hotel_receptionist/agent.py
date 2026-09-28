@@ -75,7 +75,16 @@ class HotelReceptionistAgent(RoomToolsMixin, RestaurantToolsMixin, ServicesTools
         )
 
 
-server = AgentServer()
+# Optional overrides for running several workers on one machine (e.g. the local-model demo
+# and the cloud zh-tw demo): AGENT_HTTP_PORT avoids the 8081 health-port clash, and
+# AGENT_IDLE_PROCESSES caps pre-warmed job processes (production default = one per CPU core,
+# each loading the whole agent). Unset = upstream defaults.
+_server_opts: dict = {}
+if os.getenv("AGENT_HTTP_PORT"):
+    _server_opts["port"] = int(os.environ["AGENT_HTTP_PORT"])
+if os.getenv("AGENT_IDLE_PROCESSES"):
+    _server_opts["num_idle_processes"] = int(os.environ["AGENT_IDLE_PROCESSES"])
+server = AgentServer(**_server_opts)
 
 _SEED_DB_BYTES = build_seed_bytes(TODAY)
 
@@ -396,7 +405,14 @@ def _session_conn_options() -> SessionConnectOptions:
     return SessionConnectOptions(llm_conn_options=APIConnectOptions(timeout=timeout, max_retry=1))
 
 
-@server.rtc_session(on_session_end=on_session_end, on_simulation_end=on_simulation_end)
+# AGENT_NAME empty = automatic dispatch (upstream default: joins every new room). Set it
+# when several workers share one LiveKit project (e.g. the local-model demo and the cloud
+# zh-tw demo), so each web front-end dispatches its own agent by name.
+@server.rtc_session(
+    agent_name=os.getenv("AGENT_NAME", ""),
+    on_session_end=on_session_end,
+    on_simulation_end=on_simulation_end,
+)
 async def hotel_receptionist_agent(ctx: JobContext) -> None:
     await ctx.connect()
 
