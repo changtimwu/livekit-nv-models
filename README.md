@@ -190,7 +190,7 @@ local limit: Qwen3-8B is unreliable in Mandarin; it once invented a confirmation
 ## Web front-end (remote access)
 
 `web/` is a password-protected browser front-end (Next.js, from LiveKit's agent starter) for
-calling the agent from anywhere. Two password-protected demos are published through a Cloudflare
-Tunnel: `https://hotelbooking.wormhole.work` (local models) and `https://hotel-tw.wormhole.work`
-(cloud, Taiwan Mandarin). Start/stop both with `deploy/demos.sh`. Setup, configuration and known limits: [`web/README-hotel.md`](web/README-hotel.md);
+calling the agent from anywhere. There are two password-protected demos:
+- `https://hotelbooking.wormhole.work`: local models, served from the Mac through a Cloudflare Tunnel (`deploy/demos.sh`).
+- `https://hotel-tw.wormhole.work`: cloud, Taiwan Mandarin, fully off the Mac. The web app is a Cloudflare Worker and the agent is hosted on LiveKit Cloud. Setup, configuration and known limits: [`web/README-hotel.md`](web/README-hotel.md);
 plan: GitHub issue #12.

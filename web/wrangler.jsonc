@@ -1,0 +1,27 @@
+// Cloudflare Worker for the cloud Taiwan-Mandarin demo (issue #16).
+// Build the UI first: SITE_TAGLINE="台灣華語 · 雲端模型 (LiveKit Inference)" scripts/build-static.sh
+// Secrets (wrangler secret put): LIVEKIT_API_KEY, LIVEKIT_API_SECRET, WEB_PASSWORD, WEB_SESSION_SECRET
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hotel-tw-demo",
+  "main": "cloudflare/worker.ts",
+  "compatibility_date": "2026-09-01",
+  // nodejs_compat populates process.env from vars/secrets, which lib/auth.ts reads.
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./out-cf",
+    "binding": "ASSETS",
+    // Every request goes through the Worker first, so pages can be password-gated.
+    "run_worker_first": true,
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+  "vars": {
+    "LIVEKIT_URL": "wss://gtranslate-p4i8xgo6.livekit.cloud",
+    "AGENT_NAME": "hotel-cloud-zhtw"
+  },
+  // Login attempts per client IP (Cloudflare supports 10 s or 60 s windows).
+  "ratelimits": [{ "name": "LOGIN_LIMITER", "namespace_id": "1601", "simple": { "limit": 10, "period": 60 } }],
+  "routes": [{ "pattern": "hotel-tw.wormhole.work", "custom_domain": true }],
+  "observability": { "enabled": true }
+}
