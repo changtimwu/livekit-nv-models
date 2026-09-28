@@ -12,6 +12,9 @@ venv/
 .env
 .env.local
 .env.*.local
+# any other env variant (e.g. .env.mlxlocal); keep the template tracked
+.env.*
+!.env.example
 
 # Generated SQLite db (example also ignores these under its own dir)
 fake_data/hotel.db
