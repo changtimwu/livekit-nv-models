@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { SITE } from '@/lib/site';
 
 function WelcomeImage() {
   return (
@@ -35,10 +36,9 @@ export const WelcomeView = ({
       <section className="bg-background flex flex-col items-center justify-center text-center">
         <WelcomeImage />
 
-        <p className="text-foreground max-w-prose pt-1 leading-6 font-medium">
-          Call the front desk of The LiveKit Hotel
-        </p>
+        <p className="text-foreground max-w-prose pt-1 leading-6 font-medium">{SITE.heading}</p>
         {tagline && <p className="text-muted-foreground pt-1 text-sm">{tagline}</p>}
+        {SITE.disclaimer && <p className="text-muted-foreground pt-1 text-xs">{SITE.disclaimer}</p>}
 
         <Button
           size="lg"
@@ -51,8 +51,7 @@ export const WelcomeView = ({
 
       <div className="fixed bottom-5 left-0 flex w-full items-center justify-center">
         <p className="text-muted-foreground max-w-prose pt-1 text-xs leading-5 font-normal text-pretty md:text-sm">
-          Book a room, ask about the restaurant, or check a reservation. Everything runs on local
-          models, so the first reply can take a moment.
+          {SITE.footer}
         </p>
       </div>
     </div>

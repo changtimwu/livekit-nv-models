@@ -1,0 +1,624 @@
+{
+ "source": "https://dinbendon.itsi.xyz/shop/300528",
+ "source_updated": "2023/08/22 16:58",
+ "snapshot_date": "2026-09-28",
+ "source_notice": "近捷運中正紀念堂站,捷運兩站範圍內350可外送",
+ "categories": [
+  "粥品",
+  "丼飯",
+  "炒飯",
+  "燴飯",
+  "炒烏龍",
+  "飯包",
+  "熱炒",
+  "湯品"
+ ],
+ "items": [
+  {
+   "id": "c01i01",
+   "category": "粥品",
+   "name": "超跩粥",
+   "price": 390
+  },
+  {
+   "id": "c01i02",
+   "category": "粥品",
+   "name": "海鮮干貝粥",
+   "price": 300
+  },
+  {
+   "id": "c01i03",
+   "category": "粥品",
+   "name": "鱸魚粥",
+   "price": 205
+  },
+  {
+   "id": "c01i04",
+   "category": "粥品",
+   "name": "帆立貝粥",
+   "price": 155
+  },
+  {
+   "id": "c01i05",
+   "category": "粥品",
+   "name": "鮮蝦粥",
+   "price": 205
+  },
+  {
+   "id": "c01i06",
+   "category": "粥品",
+   "name": "翡翠刎魚粥",
+   "price": 155
+  },
+  {
+   "id": "c01i07",
+   "category": "粥品",
+   "name": "海鮮粥",
+   "price": 80
+  },
+  {
+   "id": "c01i08",
+   "category": "粥品",
+   "name": "魚片粥",
+   "price": 80
+  },
+  {
+   "id": "c01i09",
+   "category": "粥品",
+   "name": "山藥牛肉粥",
+   "price": 145
+  },
+  {
+   "id": "c01i10",
+   "category": "粥品",
+   "name": "野菇牛肉粥",
+   "price": 125
+  },
+  {
+   "id": "c01i11",
+   "category": "粥品",
+   "name": "滑蛋牛肉粥",
+   "price": 105
+  },
+  {
+   "id": "c01i12",
+   "category": "粥品",
+   "name": "玉米雞片粥",
+   "price": 125
+  },
+  {
+   "id": "c01i13",
+   "category": "粥品",
+   "name": "芋香雞肉粥",
+   "price": 125
+  },
+  {
+   "id": "c01i14",
+   "category": "粥品",
+   "name": "香菇雞肉粥",
+   "price": 125
+  },
+  {
+   "id": "c01i15",
+   "category": "粥品",
+   "name": "滑蛋雞肉粥",
+   "price": 105
+  },
+  {
+   "id": "c01i16",
+   "category": "粥品",
+   "name": "及第粥",
+   "price": 95
+  },
+  {
+   "id": "c01i17",
+   "category": "粥品",
+   "name": "廣東粥",
+   "price": 80
+  },
+  {
+   "id": "c01i18",
+   "category": "粥品",
+   "name": "魩魚瘦肉粥",
+   "price": 95
+  },
+  {
+   "id": "c01i19",
+   "category": "粥品",
+   "name": "山藥瘦肉粥",
+   "price": 85
+  },
+  {
+   "id": "c01i20",
+   "category": "粥品",
+   "name": "芋香瘦肉粥",
+   "price": 80
+  },
+  {
+   "id": "c01i21",
+   "category": "粥品",
+   "name": "皮蛋瘦肉粥",
+   "price": 80
+  },
+  {
+   "id": "c01i22",
+   "category": "粥品",
+   "name": "豬肝瘦肉粥",
+   "price": 80
+  },
+  {
+   "id": "c01i23",
+   "category": "粥品",
+   "name": "蝦仁瘦肉粥",
+   "price": 85
+  },
+  {
+   "id": "c01i24",
+   "category": "粥品",
+   "name": "青菜瘦肉粥",
+   "price": 75
+  },
+  {
+   "id": "c01i25",
+   "category": "粥品",
+   "name": "玉米瘦肉粥",
+   "price": 75
+  },
+  {
+   "id": "c01i26",
+   "category": "粥品",
+   "name": "香菇瘦肉粥",
+   "price": 80
+  },
+  {
+   "id": "c01i27",
+   "category": "粥品",
+   "name": "滑蛋瘦肉粥",
+   "price": 70
+  },
+  {
+   "id": "c01i28",
+   "category": "粥品",
+   "name": "健康蔬菜粥",
+   "price": 85
+  },
+  {
+   "id": "c01i29",
+   "category": "粥品",
+   "name": "山藥香菇粥",
+   "price": 85
+  },
+  {
+   "id": "c01i30",
+   "category": "粥品",
+   "name": "什錦野菇粥",
+   "price": 85
+  },
+  {
+   "id": "c01i31",
+   "category": "粥品",
+   "name": "青菜玉米粥",
+   "price": 75
+  },
+  {
+   "id": "c01i32",
+   "category": "粥品",
+   "name": "青菜香菇粥",
+   "price": 75
+  },
+  {
+   "id": "c01i33",
+   "category": "粥品",
+   "name": "野菇玉米粥",
+   "price": 95
+  },
+  {
+   "id": "c02i01",
+   "category": "丼飯",
+   "name": "牛肉丼飯",
+   "price": 135
+  },
+  {
+   "id": "c02i02",
+   "category": "丼飯",
+   "name": "豬肉丼飯",
+   "price": 125
+  },
+  {
+   "id": "c02i03",
+   "category": "丼飯",
+   "name": "雞肉丼飯",
+   "price": 125
+  },
+  {
+   "id": "c02i04",
+   "category": "丼飯",
+   "name": "野菇丼飯",
+   "price": 125
+  },
+  {
+   "id": "c02i05",
+   "category": "丼飯",
+   "name": "炸雞塊丼飯",
+   "price": 155
+  },
+  {
+   "id": "c03i01",
+   "category": "炒飯",
+   "name": "蝦仁培根蛋炒飯",
+   "price": 165
+  },
+  {
+   "id": "c03i02",
+   "category": "炒飯",
+   "name": "XO醬蝦仁蛋炒飯",
+   "price": 165
+  },
+  {
+   "id": "c03i03",
+   "category": "炒飯",
+   "name": "櫻花蝦蛋炒飯",
+   "price": 165
+  },
+  {
+   "id": "c03i04",
+   "category": "炒飯",
+   "name": "排骨蛋炒飯",
+   "price": 155
+  },
+  {
+   "id": "c03i05",
+   "category": "炒飯",
+   "name": "炸雞塊蛋炒飯",
+   "price": 155
+  },
+  {
+   "id": "c03i06",
+   "category": "炒飯",
+   "name": "吻仔魚蛋炒飯",
+   "price": 125
+  },
+  {
+   "id": "c03i07",
+   "category": "炒飯",
+   "name": "超跩辣蘿蔔蛋炒飯",
+   "price": 105
+  },
+  {
+   "id": "c03i08",
+   "category": "炒飯",
+   "name": "牛肉蛋炒飯",
+   "price": 135
+  },
+  {
+   "id": "c03i09",
+   "category": "炒飯",
+   "name": "豬肉蛋炒飯",
+   "price": 125
+  },
+  {
+   "id": "c03i10",
+   "category": "炒飯",
+   "name": "蝦仁蛋炒飯",
+   "price": 125
+  },
+  {
+   "id": "c03i11",
+   "category": "炒飯",
+   "name": "雞片蛋炒飯",
+   "price": 125
+  },
+  {
+   "id": "c03i12",
+   "category": "炒飯",
+   "name": "香腸蛋炒飯",
+   "price": 125
+  },
+  {
+   "id": "c03i13",
+   "category": "炒飯",
+   "name": "皮蛋絞肉蛋炒飯",
+   "price": 125
+  },
+  {
+   "id": "c03i14",
+   "category": "炒飯",
+   "name": "鮭魚蛋炒飯",
+   "price": 165
+  },
+  {
+   "id": "c03i15",
+   "category": "炒飯",
+   "name": "培根蛋炒飯",
+   "price": 125
+  },
+  {
+   "id": "c04i01",
+   "category": "燴飯",
+   "name": "牛肉燴飯",
+   "price": 130
+  },
+  {
+   "id": "c04i02",
+   "category": "燴飯",
+   "name": "野菇燴飯",
+   "price": 120
+  },
+  {
+   "id": "c04i03",
+   "category": "燴飯",
+   "name": "滑蛋蝦仁燴飯",
+   "price": 125
+  },
+  {
+   "id": "c04i04",
+   "category": "燴飯",
+   "name": "滑蛋雞肉片燴飯",
+   "price": 125
+  },
+  {
+   "id": "c04i05",
+   "category": "燴飯",
+   "name": "豬肉燴飯",
+   "price": 120
+  },
+  {
+   "id": "c04i06",
+   "category": "燴飯",
+   "name": "海鮮燴飯",
+   "price": 150
+  },
+  {
+   "id": "c05i01",
+   "category": "炒烏龍",
+   "name": "牛肉炒烏龍",
+   "price": 130
+  },
+  {
+   "id": "c05i02",
+   "category": "炒烏龍",
+   "name": "豬肉炒烏龍",
+   "price": 120
+  },
+  {
+   "id": "c05i03",
+   "category": "炒烏龍",
+   "name": "雞肉炒烏龍",
+   "price": 120
+  },
+  {
+   "id": "c05i04",
+   "category": "炒烏龍",
+   "name": "野菇炒烏龍",
+   "price": 120
+  },
+  {
+   "id": "c05i05",
+   "category": "炒烏龍",
+   "name": "海鮮炒烏龍",
+   "price": 150
+  },
+  {
+   "id": "c05i06",
+   "category": "炒烏龍",
+   "name": "炸排骨炒烏龍",
+   "price": 150
+  },
+  {
+   "id": "c05i07",
+   "category": "炒烏龍",
+   "name": "炸雞塊炒烏龍",
+   "price": 150
+  },
+  {
+   "id": "c06i01",
+   "category": "飯包",
+   "name": "蔥爆牛肉飯",
+   "price": 160
+  },
+  {
+   "id": "c06i02",
+   "category": "飯包",
+   "name": "蔥爆豬肉飯",
+   "price": 150
+  },
+  {
+   "id": "c06i03",
+   "category": "飯包",
+   "name": "炸排骨飯",
+   "price": 110
+  },
+  {
+   "id": "c06i04",
+   "category": "飯包",
+   "name": "炸雞腿飯",
+   "price": 110
+  },
+  {
+   "id": "c06i05",
+   "category": "飯包",
+   "name": "泰式脆雞腿飯",
+   "price": 120
+  },
+  {
+   "id": "c06i06",
+   "category": "飯包",
+   "name": "蒜泥白肉飯",
+   "price": 100
+  },
+  {
+   "id": "c06i07",
+   "category": "飯包",
+   "name": "蒜香魚片飯",
+   "price": 100
+  },
+  {
+   "id": "c07i01",
+   "category": "熱炒",
+   "name": "超跩海瓜子",
+   "price": 220
+  },
+  {
+   "id": "c07i02",
+   "category": "熱炒",
+   "name": "蒜味大蝦",
+   "price": 250
+  },
+  {
+   "id": "c07i03",
+   "category": "熱炒",
+   "name": "番茄蝦仁",
+   "price": 220
+  },
+  {
+   "id": "c07i04",
+   "category": "熱炒",
+   "name": "蔥爆牛肉",
+   "price": 170
+  },
+  {
+   "id": "c07i05",
+   "category": "熱炒",
+   "name": "蔥爆豬肉",
+   "price": 150
+  },
+  {
+   "id": "c07i06",
+   "category": "熱炒",
+   "name": "野菇牛肉",
+   "price": 200
+  },
+  {
+   "id": "c07i07",
+   "category": "熱炒",
+   "name": "超跩豬肝",
+   "price": 150
+  },
+  {
+   "id": "c07i08",
+   "category": "熱炒",
+   "name": "蒜泥白肉",
+   "price": 120
+  },
+  {
+   "id": "c07i09",
+   "category": "熱炒",
+   "name": "肉絲茼蒿",
+   "price": 180
+  },
+  {
+   "id": "c07i10",
+   "category": "熱炒",
+   "name": "三杯雞",
+   "price": 200
+  },
+  {
+   "id": "c07i11",
+   "category": "熱炒",
+   "name": "泰式脆雞",
+   "price": 160
+  },
+  {
+   "id": "c07i12",
+   "category": "熱炒",
+   "name": "芋香雞片",
+   "price": 160
+  },
+  {
+   "id": "c07i13",
+   "category": "熱炒",
+   "name": "蝦仁烘蛋",
+   "price": 150
+  },
+  {
+   "id": "c07i14",
+   "category": "熱炒",
+   "name": "超跩菜脯蛋",
+   "price": 120
+  },
+  {
+   "id": "c07i15",
+   "category": "熱炒",
+   "name": "魩魚烘蛋",
+   "price": 120
+  },
+  {
+   "id": "c07i16",
+   "category": "熱炒",
+   "name": "九層塔烘蛋",
+   "price": 120
+  },
+  {
+   "id": "c07i17",
+   "category": "熱炒",
+   "name": "香酥豆腐",
+   "price": 100
+  },
+  {
+   "id": "c07i18",
+   "category": "熱炒",
+   "name": "培根高麗菜",
+   "price": 150
+  },
+  {
+   "id": "c07i19",
+   "category": "熱炒",
+   "name": "肉絲炒水蓮",
+   "price": 150
+  },
+  {
+   "id": "c07i20",
+   "category": "熱炒",
+   "name": "清炒高麗菜",
+   "price": 120
+  },
+  {
+   "id": "c07i21",
+   "category": "熱炒",
+   "name": "季節時蔬",
+   "price": 100
+  },
+  {
+   "id": "c07i22",
+   "category": "熱炒",
+   "name": "白飯",
+   "price": 15
+  },
+  {
+   "id": "c08i01",
+   "category": "湯品",
+   "name": "番茄蛋花湯",
+   "price": 50
+  },
+  {
+   "id": "c08i02",
+   "category": "湯品",
+   "name": "海帶芽蛋花湯",
+   "price": 50
+  },
+  {
+   "id": "c08i03",
+   "category": "湯品",
+   "name": "豬肝湯",
+   "price": 70
+  },
+  {
+   "id": "c08i04",
+   "category": "湯品",
+   "name": "鱸魚湯",
+   "price": 150
+  },
+  {
+   "id": "c08i05",
+   "category": "湯品",
+   "name": "麻油豬肝湯",
+   "price": 100
+  },
+  {
+   "id": "c08i06",
+   "category": "湯品",
+   "name": "麻油豬肝麵線",
+   "price": 120
+  }
+ ]
+}

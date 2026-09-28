@@ -6,10 +6,12 @@ import { useSession } from '@livekit/components-react';
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr';
 import { AgentSessionProvider } from '@/components/agents-ui/agent-session-provider';
 import { StartAudioButton } from '@/components/agents-ui/start-audio-button';
+import { OrderPanel } from '@/components/app/order-panel';
 import { ViewController } from '@/components/app/view-controller';
 import { Toaster } from '@/components/ui/sonner';
 import { useAgentErrors } from '@/hooks/useAgentErrors';
 import { useDebugMode } from '@/hooks/useDebug';
+import { SITE } from '@/lib/site';
 
 const IN_DEVELOPMENT = process.env.NODE_ENV !== 'production';
 
@@ -51,6 +53,7 @@ export function App({
       <main className="grid h-svh grid-cols-1 place-content-center">
         <ViewController isVideoInputSupported={isVideoInputSupported} tagline={tagline} />
       </main>
+      {SITE.orderPanel && <OrderPanel />}
       <StartAudioButton label="Start Audio" />
       <Toaster
         icons={{

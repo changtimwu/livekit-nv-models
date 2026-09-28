@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { SITE } from '@/lib/site';
 
 export default function LoginPage() {
   const [password, setPassword] = useState('');
@@ -34,8 +35,8 @@ export default function LoginPage() {
   return (
     <main className="grid h-svh place-content-center px-6">
       <form onSubmit={onSubmit} className="flex w-72 flex-col items-center gap-4 text-center">
-        <h1 className="text-foreground text-lg font-semibold">The LiveKit Hotel</h1>
-        <p className="text-muted-foreground text-sm">Enter the password to call the front desk.</p>
+        <h1 className="text-foreground text-lg font-semibold">{SITE.title}</h1>
+        <p className="text-muted-foreground text-sm">{SITE.loginPrompt}</p>
         <input
           type="password"
           autoFocus

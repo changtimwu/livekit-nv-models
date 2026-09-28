@@ -26,3 +26,7 @@ fake_data/hotel.db-wal
 
 # demo runtime logs
 deploy/logs/
+
+# voiceshared copied into apps for LiveKit Cloud builds (deploy/agent_deploy.sh)
+hotel_receptionist/voiceshared/
+bendon_ordering/voiceshared/
