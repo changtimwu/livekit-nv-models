@@ -1,46 +1,29 @@
 # syntax=docker/dockerfile:1
-#
-# Shared Dockerfile for every example under examples/. Byte-identical
-# across the tree — each example's entry script is named `agent.py`,
-# so there's no per-example variation left.
-ARG PYTHON_VERSION=3.13
+# LiveKit Cloud agent image for the cloud demo (issue #16). Based on `lk agent dockerfile`.
+# Cloud backends only: base requirements.txt, no MLX. Configuration comes from agent secrets
+# (AGENT_NAME, AGENT_LANGUAGE); LiveKit Cloud injects its own credentials.
+ARG PYTHON_VERSION=3.12
 FROM python:${PYTHON_VERSION}-slim AS base
-
 ENV PYTHONUNBUFFERED=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 
-ARG UID=10001
-RUN adduser \
-    --disabled-password \
-    --gecos "" \
-    --home "/app" \
-    --shell "/sbin/nologin" \
-    --uid "${UID}" \
-    appuser
-
-RUN apt-get update && apt-get install -y \
-    git \
-    git-lfs \
-    gcc \
-    g++ \
-    python3-dev \
+FROM base AS build
+RUN apt-get update && apt-get install -y gcc g++ python3-dev \
   && rm -rf /var/lib/apt/lists/*
-
-# Enable git-lfs so pip's git installs smudge LFS-tracked binaries
-# (e.g. silero's bundled VAD onnx) instead of leaving pointer files.
-# --system so the unprivileged appuser below inherits the filters.
-RUN git lfs install --system
-
 WORKDIR /app
-USER appuser
-
-COPY requirements.txt ./
-RUN pip install --user --no-cache-dir -r requirements.txt
-
-# Pre-download model weights plugins ship (silero VAD, turn-detector, …)
-# so the container is ready to take traffic without a cold-download stall.
+COPY requirements.txt constraints-cloud.txt ./
+RUN python -m venv .venv
+ENV PATH="/app/.venv/bin:$PATH"
+RUN pip install --no-cache-dir -r requirements.txt -c constraints-cloud.txt
+# Pre-download turn-detector / VAD model files (cached across code-only changes).
 RUN python -m livekit.agents download-files
-
 COPY . .
 
+FROM base
+ARG UID=10001
+RUN adduser --disabled-password --gecos "" --home "/app" --shell "/sbin/nologin" --uid "${UID}" appuser
+WORKDIR /app
+COPY --from=build --chown=appuser:appuser /app /app
+ENV PATH="/app/.venv/bin:$PATH"
+USER appuser
 CMD ["python", "agent.py", "start"]
