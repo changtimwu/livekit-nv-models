@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import {
   AccessToken,
   type AccessTokenOptions,
+  RoomAgentDispatch,
   RoomConfiguration,
   type VideoGrant,
 } from 'livekit-server-sdk';
@@ -20,6 +21,8 @@ type ConnectionDetails = {
 const API_KEY = process.env.LIVEKIT_API_KEY;
 const API_SECRET = process.env.LIVEKIT_API_SECRET;
 const LIVEKIT_URL = process.env.LIVEKIT_URL;
+// Agent this site dispatches (server-side, so a visitor can't pick another worker).
+const AGENT_NAME = process.env.AGENT_NAME;
 
 // don't cache the results
 export const revalidate = 0;
@@ -47,6 +50,9 @@ export async function POST(req: Request) {
     const roomConfig = body?.room_config
       ? RoomConfiguration.fromJson(body.room_config, { ignoreUnknownFields: true })
       : new RoomConfiguration();
+    if (AGENT_NAME) {
+      roomConfig.agents = [new RoomAgentDispatch({ agentName: AGENT_NAME })];
+    }
 
     // Generate participant token
     const participantName = 'user';

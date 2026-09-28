@@ -23,3 +23,6 @@ fake_data/hotel.db-wal
 
 # macOS
 .DS_Store
+
+# demo runtime logs
+deploy/logs/
