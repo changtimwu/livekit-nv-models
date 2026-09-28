@@ -1,0 +1,12 @@
+# Versions tested on the Mac (2026-09-28); pins the LiveKit-hosted agent image to them so a
+# rebuild can't silently pick up a newer SDK. Used only by the Dockerfile.
+livekit==1.1.13
+livekit-agents==1.6.6
+livekit-api==1.2.0
+livekit-protocol==1.1.19
+livekit-local-inference==0.2.6
+livekit-plugins-silero==1.6.5
+livekit-plugins-turn-detector==1.6.5
+python-dotenv==1.2.2
+tzdata==2026.3
+pypinyin==0.55.0

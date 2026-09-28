@@ -96,6 +96,15 @@ Adding a language = add a `PROFILES` entry.
 - `AGENT_HTTP_PORT` sets the health port; the prod default 8081 clashes with a second worker.
 - `AGENT_IDLE_PROCESSES` sets the number of pre-warmed processes; the prod default is one per CPU core, each loading the whole agent.
 
+**Two apps share `voiceshared/`** (repo root):
+- `voiceshared/profiles.py`: per-language model/voice defaults + `ZH_TW_SPEECH_RULES`
+- `voiceshared/backends.py`: `build_llm/tts/stt`, conn options, `agent_server()`/`agent_name()`
+- `voiceshared/local_stt.py`
+
+Each app's `agent.py` adds the repo root to `sys.path` when there's no vendored copy. The apps are `hotel_receptionist/` and **`bendon_ordering/`** (愛比食堂 voice order-taker, issue #20; see its README).
+- The hotel's prompts were verified byte-identical after the extraction.
+- **Hosted agents must be deployed with `deploy/agent_deploy.sh <app>`.** It copies `voiceshared/` into the app for the LiveKit Cloud build (the build only sees the app folder) and always passes `--secrets-file .env.cloudagent`.
+
 `deploy/demos.sh` runs the local web demo (worker `hotel-local`, web :3100, via the tunnel).
 
 The cloud zh-tw demo runs entirely off the Mac:

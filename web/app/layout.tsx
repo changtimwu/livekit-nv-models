@@ -3,6 +3,7 @@ import localFont from 'next/font/local';
 import { ThemeProvider } from '@/components/app/theme-provider';
 import { ThemeToggle } from '@/components/app/theme-toggle';
 import { cn } from '@/lib/shadcn/utils';
+import { SITE } from '@/lib/site';
 import '@/styles/globals.css';
 
 const publicSans = Public_Sans({
@@ -44,7 +45,7 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html
-      lang="en"
+      lang={SITE.htmlLang}
       suppressHydrationWarning
       className={cn(
         publicSans.variable,
@@ -53,11 +54,8 @@ export default function RootLayout({ children }: RootLayoutProps) {
       )}
     >
       <head>
-        <title>The LiveKit Hotel</title>
-        <meta
-          name="description"
-          content="Call the front desk of The LiveKit Hotel (voice AI running on local models)"
-        />
+        <title>{SITE.title}</title>
+        <meta name="description" content={SITE.description} />
       </head>
       <body className="overflow-x-hidden">
         <ThemeProvider

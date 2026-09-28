@@ -1,0 +1,40 @@
+# Secrets and local config: never ship these to the image
+.env
+.env.*
+!.env.example
+*.token
+
+# Local-only (MLX) and caches
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+fake_data/hotel.db
+run_artifacts/
+logs/
+
+# From the upstream example's .dockerignore
+**/*.log
+**/*.gz
+**/*.tgz
+**/.tmp
+**/.cache/
+**/.ruff_cache/
+**/coverage/
+**/*.egg-info/
+**/dist/
+**/build/
+.git
+.gitignore
+.gitattributes
+.github/
+.idea/
+.vscode/
+.DS_Store
+test/
+tests/
+eval/
+evals/
+evals/

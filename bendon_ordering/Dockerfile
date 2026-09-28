@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
-# LiveKit Cloud agent image for the cloud demo (issue #16). Based on `lk agent dockerfile`.
-# Cloud backends only: base requirements.txt, no MLX. Deploy with deploy/agent_deploy.sh (it
-# vendors voiceshared/ into this folder for the build). Configuration comes from agent secrets
+# LiveKit Cloud agent image for the 愛比食堂 order-taker (issue #20). Based on `lk agent dockerfile`.
+# Cloud backends only, no MLX. Deploy with deploy/agent_deploy.sh (it vendors voiceshared/).
+# Configuration comes from agent secrets
 # (AGENT_NAME, AGENT_LANGUAGE); LiveKit Cloud injects its own credentials.
 ARG PYTHON_VERSION=3.12
 FROM python:${PYTHON_VERSION}-slim AS base

@@ -42,5 +42,5 @@ yarn-error.log*
 next-env.d.ts
 
 # Cloudflare static build + wrangler state
-/out-cf/
+/out-cf*/
 /.wrangler/
