@@ -79,13 +79,20 @@ Toggles (set in `.env.local`): `LLM_BACKEND` / `TTS_BACKEND` / `STT_BACKEND` = `
 plus `LOCAL_{LLM,TTS,STT}_MODEL` / `LOCAL_{LLM,TTS}_BASE_URL` / `LOCAL_TTS_VOICE` /
 `LOCAL_STT_LANGUAGE` / `LOCAL_LLM_TIMEOUT`. Mix freely (e.g. local LLM+TTS, cloud STT). `.env.example` documents them.
 
-**Caller language:** `AGENT_LANGUAGE=en|zh` (default `en`), resolved by `current_language()` in
-`languages.py`. A profile supplies the default Kokoro voice (`af_heart` / `zf_xiaobei`), the local
-STT model + language label, and a prompt directive. Explicit `LOCAL_TTS_VOICE` / `LOCAL_STT_MODEL` /
-`LOCAL_STT_LANGUAGE` still override the profile, so leave them unset in `.env.local` or `zh` gets
-the English voice (and `en` loses streaming STT).
-`zh` is tuned for the local backends only: with a cloud backend the agent just logs a warning
-(cloud Mandarin support is GitHub issue #1). Adding a language = add a `PROFILES` entry.
+**Caller language:** `AGENT_LANGUAGE=en|zh|zh-tw` (default `en`; `zh_tw` also accepted), resolved by
+`current_language()` in `languages.py`. A profile supplies:
+- the prompt directive (`zh` = mainland/Simplified, `zh-tw` = Taiwan/Traditional with Taiwan terms)
+- local defaults: Kokoro voice, local STT model + language label
+- **cloud** defaults (`cloud_{stt,tts,llm}_*`), passed to `inference.STT/TTS/LLM` only when set.
+  `en` sets none, so the cloud path stays byte-identical to upstream.
+
+Explicit `LOCAL_TTS_VOICE` / `LOCAL_STT_MODEL` / `LOCAL_STT_LANGUAGE` still override the profile, so
+leave them unset in `.env.local` or `zh` gets the English voice (and `en` loses streaming STT).
+Cloud picks and their evaluation (LiveKit Inference only) are in GitHub issue #1.
+Adding a language = add a `PROFILES` entry.
+- **Phone numbers must be E.164 for LiveKit's `GetPhoneNumberTask`** (`^\+?[1-9]\d{6,14}$`), which
+  rejects any local number starting with 0. The zh / zh-tw directives tell the model to pass
+  `+86…` / `+886…`.
 
 To run **fully local**, start two servers first (STT loads in-process on first utterance):
 

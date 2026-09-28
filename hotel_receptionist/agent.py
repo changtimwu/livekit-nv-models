@@ -239,7 +239,7 @@ def _build_llm():
             # for voice. Templates without the flag just ignore it.
             extra_body={"chat_template_kwargs": {"enable_thinking": False}},
         )
-    return inference.LLM("google/gemma-4-31b-it")
+    return inference.LLM(current_language().cloud_llm_model or "google/gemma-4-31b-it")
 
 
 def _single_system_client(base_url: str):
@@ -350,7 +350,13 @@ def _build_tts():
             response_format="wav",
             client=client,
         )
-    return inference.TTS("inworld/inworld-tts-2")
+    lang = current_language()
+    kwargs = {}
+    if lang.cloud_tts_voice:
+        kwargs["voice"] = lang.cloud_tts_voice
+    if lang.cloud_tts_language:
+        kwargs["language"] = lang.cloud_tts_language
+    return inference.TTS(lang.cloud_tts_model or "inworld/inworld-tts-2", **kwargs)
 
 
 def _build_stt(vad):
@@ -373,7 +379,11 @@ def _build_stt(vad):
         if "nemotron" in model.lower():
             return MLXNemotronStreamingSTT(vad=vad, model=model, language=language)
         return MLXQwen3STT(model=model, language=language)
-    return inference.STT("deepgram/nova-3")
+    lang = current_language()
+    kwargs = {}
+    if lang.cloud_stt_language:
+        kwargs["language"] = lang.cloud_stt_language
+    return inference.STT(lang.cloud_stt_model or "deepgram/nova-3", **kwargs)
 
 
 def _session_conn_options() -> SessionConnectOptions:
@@ -395,16 +405,6 @@ async def hotel_receptionist_agent(ctx: JobContext) -> None:
     ui = UiView(ctx.room, db.connection)
     db.on_change = ui.on_change
     await ui.start()
-
-    lang = current_language()
-    if lang.code != "en":
-        cloud = [s for s in ("LLM", "TTS", "STT") if os.getenv(f"{s}_BACKEND", "cloud") != "local"]
-        if cloud:
-            # Cloud-stack language support is still unverified (GitHub issue #1).
-            logger.warning(
-                "AGENT_LANGUAGE=%s is only tuned for local backends; cloud %s may not follow",
-                lang.code, "/".join(cloud),
-            )
 
     userdata = Userdata(db=db)
     # An explicit VAD is required (not the bundled default): without it the
