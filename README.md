@@ -160,21 +160,32 @@ python agent.py console      # or `dev` for the browser playground
 
 **Revert to cloud:** comment out the `*_BACKEND` lines in `.env.local` and restart the agent.
 
-### Caller language (English / Mandarin)
+### Caller language (English / Mandarin / Taiwan Mandarin)
 
-Set `AGENT_LANGUAGE` in `.env.local` to `en` (default) or `zh`:
+Set `AGENT_LANGUAGE` in `.env.local` to `en` (default), `zh` (mainland Mandarin, Simplified) or
+`zh-tw` (Taiwan Mandarin, Traditional; `zh_tw` also works). Each is a profile in
+`hotel_receptionist/languages.py`, and it sets the prompt directive plus the local **and** cloud
+model defaults:
 
-| | `en` | `zh` |
-|---|---|---|
-| Prompt | unchanged upstream English prompt | same English prompt + a Mandarin directive (`hotel_receptionist/languages.py`) |
-| Kokoro voice | `af_heart` | `zf_xiaobei` (also `zf_xiaoni`, `zf_xiaoxiao`, `zf_xiaoyi`, `zm_yunjian`, `zm_yunxi`, `zm_yunxia`, `zm_yunyang`) |
-| STT | Nemotron 3.5 streaming (`en-US` prompt) | Qwen3-ASR batch (auto-detects; label `zh`) |
+| | `en` | `zh` | `zh-tw` |
+|---|---|---|---|
+| Prompt | unchanged upstream English | English + mainland directive (Simplified) | English + Taiwan directive (Traditional, Taiwan terms, "LiveKit 飯店") |
+| Local STT | Nemotron 3.5 streaming | Qwen3-ASR (batch) | Qwen3-ASR (batch) |
+| Local TTS (Kokoro) | `af_heart` | `zf_xiaobei` | `zf_xiaobei` (Kokoro has no Taiwan voice) |
+| Cloud STT | `deepgram/nova-3` | `assemblyai/u3-rt-pro`, `zh` | `deepgram/nova-3`, `zh-TW` (Traditional output) |
+| Cloud TTS | `inworld/inworld-tts-2` | `inworld/inworld-tts-2`, voice `Yichen` | `cartesia/sonic-3.6`, default voice (most Taiwanese by ear) |
+| Cloud LLM | `google/gemma-4-31b-it` | `google/gemma-4-31b-it` | `google/gemma-4-31b-it` |
 
-`zh` needs `misaki[zh]` (in `requirements-local.txt`) for Kokoro's Mandarin G2P, and is tuned
-for the **local** backends only — with any cloud backend the agent logs a warning, since
-cloud-stack Mandarin support is still open (GitHub issue #1). Known limit: Qwen3-8B follows
-the Mandarin directive well but, as in English, sometimes lists every option and price at
-once instead of narrowing progressively.
+The cloud picks come from a LiveKit-Inference-only evaluation (GitHub issue #1). Findings:
+- **Only three hosted STT routes accept Mandarin:** Deepgram, AssemblyAI u3-rt-pro, and `auto` (= Cartesia ink-whisper).
+- **Only Deepgram outputs Traditional** characters.
+- **Several multi-turn cloud LLMs completed a correct Taiwan-Mandarin booking.**
+
+Phone numbers: LiveKit's phone-number task only accepts international format, so the zh / zh-tw
+directives tell the model to pass `+886…` / `+86…` (a local `09xx…` number is otherwise rejected).
+
+`zh` / `zh-tw` on the local stack need `misaki[zh]` (in `requirements-local.txt`) for Kokoro. Known
+local limit: Qwen3-8B is unreliable in Mandarin; it once invented a confirmation code (#8).
 
 ## Web front-end (remote access)
 
