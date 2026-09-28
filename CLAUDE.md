@@ -103,6 +103,11 @@ The cloud zh-tw demo runs entirely off the Mac:
 - the web app is a **Cloudflare Worker** (`web/cloudflare/worker.ts`, `web/wrangler.jsonc`, static UI from `web/scripts/build-static.sh`)
 
 ⚠️ `lk agent create/deploy` defaults to uploading `.env.local` as secrets. Always pass `--secrets-file .env.cloudagent`.
+- **The zh-tw prompt works around Cartesia sonic-3.6 quirks by controlling what the model writes:**
+  - Arabic "2" is read as 兩, so numbers are written as Chinese characters with 二; 兩 is kept only as a count before a measure word.
+  - 菸 is read as "八", so the prompt says to write 煙.
+  - Read-backs are spelled one symbol at a time (@ = 小老鼠, . = 點).
+  - Check pronunciation by synthesizing and transcribing with Qwen3-ASR: the transcript shows 二 vs 兩 and 八 vs 煙.
 - **Phone numbers must be E.164 for LiveKit's `GetPhoneNumberTask`** (`^\+?[1-9]\d{6,14}$`), which
   rejects any local number starting with 0. The zh / zh-tw directives tell the model to pass
   `+86…` / `+886…`.
