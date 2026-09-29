@@ -5,12 +5,7 @@
 //   app/api/token/route.ts  -> POST /api/token (dispatches AGENT_NAME server-side)
 // Session cookies are the same format as the Next.js app (lib/auth.ts).
 import { AccessToken, RoomAgentDispatch, RoomConfiguration } from 'livekit-server-sdk';
-import {
-  SESSION_COOKIE,
-  SESSION_MAX_AGE_S,
-  createSessionValue,
-  isValidSession,
-} from '../lib/auth';
+import { SESSION_COOKIE, SESSION_MAX_AGE_S, createSessionValue, isValidSession } from '../lib/auth';
 
 interface Env {
   ASSETS: Fetcher;
@@ -19,12 +14,19 @@ interface Env {
   LIVEKIT_API_KEY: string;
   LIVEKIT_API_SECRET: string;
   AGENT_NAME: string;
+  // Comma-separated store slugs a caller may pick (bendon demo, #22); empty = no store metadata.
+  STORES?: string;
   WEB_PASSWORD: string;
   WEB_SESSION_SECRET: string;
 }
 
 // Pages and assets reachable without a session (the login page and what it loads).
-const PUBLIC = [/^\/login(\.html|\.txt)?$/, /^\/_next\//, /^\/favicon\.ico$/, /\.(svg|png|jpg|ico|otf|woff2?)$/];
+const PUBLIC = [
+  /^\/login(\.html|\.txt)?$/,
+  /^\/_next\//,
+  /^\/favicon\.ico$/,
+  /\.(svg|png|jpg|ico|otf|woff2?)$/,
+];
 
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -71,7 +73,29 @@ async function login(req: Request, env: Env): Promise<Response> {
   return res;
 }
 
-async function token(env: Env): Promise<Response> {
+// The page sends the picked store as the agent dispatch metadata; accept only allowlisted
+// slugs and write the metadata ourselves, so a visitor can't inject arbitrary metadata.
+async function requestedStore(req: Request, env: Env): Promise<string | undefined> {
+  const allowed = (env.STORES ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (allowed.length === 0) return undefined;
+  let slug: unknown;
+  try {
+    const body = (await req.json()) as { room_config?: unknown };
+    const cfg = body.room_config
+      ? RoomConfiguration.fromJson(body.room_config as never, { ignoreUnknownFields: true })
+      : undefined;
+    const md = cfg?.agents?.[0]?.metadata;
+    slug = md ? (JSON.parse(md) as { store?: unknown }).store : undefined;
+  } catch {
+    slug = undefined;
+  }
+  return typeof slug === 'string' && allowed.includes(slug) ? slug : allowed[0];
+}
+
+async function token(req: Request, env: Env): Promise<Response> {
   // One fresh, unguessable room per call; the site's agent is dispatched server-side.
   const roomName = `hotel_${crypto.randomUUID()}`;
   const at = new AccessToken(env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET, {
@@ -79,9 +103,21 @@ async function token(env: Env): Promise<Response> {
     name: 'user',
     ttl: '15m',
   });
-  at.addGrant({ room: roomName, roomJoin: true, canPublish: true, canPublishData: true, canSubscribe: true });
+  at.addGrant({
+    room: roomName,
+    roomJoin: true,
+    canPublish: true,
+    canPublishData: true,
+    canSubscribe: true,
+  });
+  const store = await requestedStore(req, env);
   at.roomConfig = new RoomConfiguration({
-    agents: [new RoomAgentDispatch({ agentName: env.AGENT_NAME })],
+    agents: [
+      new RoomAgentDispatch({
+        agentName: env.AGENT_NAME,
+        metadata: store ? JSON.stringify({ store }) : '',
+      }),
+    ],
   });
   return json({
     serverUrl: env.LIVEKIT_URL,
@@ -101,7 +137,7 @@ export default {
     const authed = await isValidSession(readCookie(req, SESSION_COOKIE));
     if (pathname.startsWith('/api/')) {
       if (!authed) return json({ error: 'unauthorized' }, 401);
-      if (pathname === '/api/token' && req.method === 'POST') return token(env);
+      if (pathname === '/api/token' && req.method === 'POST') return token(req, env);
       return json({ error: 'not found' }, 404);
     }
     if (!authed) return Response.redirect(new URL('/login', req.url).toString(), 307);

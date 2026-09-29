@@ -11,14 +11,11 @@ import random
 import re
 from dataclasses import dataclass, field
 
-import menu
+from menu import Store
 
-DELIVERY_MINIMUM = 350  # 「捷運兩站範圍內350可外送」
-# The source only says "within two MRT stops of 中正紀念堂站"; without geocoding, accept
-# addresses that name 中正區 and let the shop call back otherwise.
-DELIVERY_AREA_HINTS = ("中正區", "中正")
-PICKUP_MINUTES = 20
-DELIVERY_MINUTES = 40
+# Fulfillment rules come from the store (stores/meta/<slug>.json). Stores whose source lists no
+# delivery rules are pickup only (#22). Delivery areas are checked by address hints - there's
+# no geocoding, so e.g. 愛比食堂 accepts addresses naming 中正區.
 
 
 class OrderError(Exception):
@@ -32,6 +29,11 @@ class Line:
     unit_price: int
     quantity: int
     note: str = ""
+    variant: str = ""  # e.g. 白飯 / 五穀飯
+
+    @property
+    def label(self) -> str:
+        return f"{self.name}（{self.variant}）" if self.variant else self.name
 
     @property
     def amount(self) -> int:
@@ -40,6 +42,7 @@ class Line:
 
 @dataclass
 class Order:
+    store: Store
     lines: list[Line] = field(default_factory=list)
     mode: str | None = None  # "pickup" | "delivery"
     address: str = ""
@@ -50,31 +53,40 @@ class Order:
     order_no: str = ""
 
     # ---- items -------------------------------------------------------------------------
-    def _find(self, item_id: str) -> Line | None:
-        return next((ln for ln in self.lines if ln.item_id == item_id), None)
+    def _find(self, item_id: str, variant: str | None = None) -> Line | None:
+        return next((ln for ln in self.lines
+                     if ln.item_id == item_id and (variant is None or ln.variant == variant)), None)
 
     def _require_open(self) -> None:
         if self.status != "open":
             raise OrderError(f"order is already {self.status}")
 
-    def add(self, item_id: str, quantity: int, note: str = "") -> Line:
+    def add(self, item_id: str, quantity: int, note: str = "", variant: str = "") -> Line:
         self._require_open()
-        item = menu.get(item_id)
+        item = self.store.get(item_id)
         if item is None:
             raise OrderError(f"unknown item id {item_id!r} - look it up with find_menu_items first")
         if not 1 <= quantity <= 50:
             raise OrderError("quantity must be between 1 and 50")
-        line = self._find(item_id)
+        price, chosen = item.price, ""
+        if item.variants:
+            v = item.variant(variant) if variant else None
+            if v is None:
+                opts = " / ".join(x.name for x in item.variants)
+                raise OrderError(f"{item.name} needs a choice of {opts} - ask the caller which one")
+            price, chosen = v.price, v.name
+        line = self._find(item_id, chosen)
         if line and line.note == note.strip():
             line.quantity += quantity
             return line
-        line = Line(item.id, item.name, item.price, quantity, note.strip())
+        line = Line(item.id, item.name, price, quantity, note.strip(), chosen)
         self.lines.append(line)
         return line
 
-    def update(self, item_id: str, quantity: int | None, note: str | None) -> Line | None:
+    def update(self, item_id: str, quantity: int | None, note: str | None,
+               variant: str | None = None) -> Line | None:
         self._require_open()
-        line = self._find(item_id)
+        line = self._find(item_id, variant or None)
         if line is None:
             raise OrderError(f"{item_id!r} is not in the order")
         if quantity is not None:
@@ -88,8 +100,8 @@ class Order:
             line.note = note.strip()
         return line
 
-    def remove(self, item_id: str) -> None:
-        self.update(item_id, 0, None)
+    def remove(self, item_id: str, variant: str | None = None) -> None:
+        self.update(item_id, 0, None, variant)
 
     # ---- money -------------------------------------------------------------------------
     @property
@@ -107,16 +119,21 @@ class Order:
 
     def set_delivery(self, address: str, time: str) -> None:
         self._require_open()
-        if self.subtotal < DELIVERY_MINIMUM:
+        rules = self.store.delivery
+        if rules is None:
+            raise OrderError("this store is pickup only (自取) - no delivery; offer pickup")
+        minimum = rules.get("minimum", 0)
+        if self.subtotal < minimum:
             raise OrderError(
-                f"delivery needs a subtotal of at least {DELIVERY_MINIMUM}; the order is "
-                f"{self.subtotal}, {DELIVERY_MINIMUM - self.subtotal} short - offer to add items "
+                f"delivery needs a subtotal of at least {minimum}; the order is "
+                f"{self.subtotal}, {minimum - self.subtotal} short - offer to add items "
                 "or switch to pickup"
             )
-        if not any(h in address for h in DELIVERY_AREA_HINTS):
+        hints = rules.get("area_hints", [])
+        if hints and not any(h in address for h in hints):
             raise OrderError(
-                "the shop only delivers within two MRT stops of 中正紀念堂站 (台北市中正區); "
-                "ask for an address in 中正區 or offer pickup"
+                f"the shop only delivers to {rules.get('area_text', '、'.join(hints))}; "
+                "ask for an address there or offer pickup"
             )
         self.mode, self.address, self.time = "delivery", address.strip(), time.strip() or "盡快"
 
@@ -149,8 +166,9 @@ class Order:
         self._require_open()
         if self.missing():
             raise OrderError(f"can't confirm yet, still missing: {', '.join(self.missing())}")
-        if self.mode == "delivery" and self.subtotal < DELIVERY_MINIMUM:
-            raise OrderError(f"delivery minimum is {DELIVERY_MINIMUM}; the order is {self.subtotal}")
+        minimum = (self.store.delivery or {}).get("minimum", 0)
+        if self.mode == "delivery" and self.subtotal < minimum:
+            raise OrderError(f"delivery minimum is {minimum}; the order is {self.subtotal}")
         self.status = "confirmed"
         self.order_no = "A" + "".join(random.choice("0123456789") for _ in range(3))
 
@@ -160,7 +178,7 @@ class Order:
 
     @property
     def ready_minutes(self) -> int:
-        return DELIVERY_MINUTES if self.mode == "delivery" else PICKUP_MINUTES
+        return self.store.delivery_minutes if self.mode == "delivery" else self.store.pickup_minutes
 
     # ---- views -------------------------------------------------------------------------
     def summary(self) -> str:
@@ -169,7 +187,7 @@ class Order:
             body = "order is empty"
         else:
             body = "; ".join(
-                f"{ln.name} x{ln.quantity} = {ln.amount}" + (f" (note: {ln.note})" if ln.note else "")
+                f"[{ln.item_id}] {ln.label} x{ln.quantity} = {ln.amount}" + (f" (note: {ln.note})" if ln.note else "")
                 for ln in self.lines
             )
         parts = [body, f"subtotal {self.subtotal}"]
@@ -186,10 +204,12 @@ class Order:
     def snapshot(self) -> dict:
         """JSON for the live order view in the web page."""
         return {
+            "store": self.store.name,
+            "delivers": self.store.delivers,
             "status": self.status,
             "order_no": self.order_no,
             "lines": [
-                {"name": ln.name, "quantity": ln.quantity, "unit_price": ln.unit_price,
+                {"name": ln.label, "quantity": ln.quantity, "unit_price": ln.unit_price,
                  "amount": ln.amount, "note": ln.note}
                 for ln in self.lines
             ],
@@ -200,5 +220,5 @@ class Order:
             "time": self.time,
             "name": self.name,
             "phone_masked": (self.phone[:4] + "…" + self.phone[-3:]) if self.phone else "",
-            "delivery_minimum": DELIVERY_MINIMUM,
+            "delivery_minimum": (self.store.delivery or {}).get("minimum", 0),
         }

@@ -19,7 +19,9 @@
   },
   "vars": {
     "LIVEKIT_URL": "wss://gtranslate-p4i8xgo6.livekit.cloud",
-    "AGENT_NAME": "bendon-zhtw"
+    "AGENT_NAME": "bendon-zhtw",
+    // Stores the page may pick (bendon_ordering/stores/*.json); the first is the default.
+    "STORES": "aibi,dawudi,yujia"
   },
   // Login attempts per client IP (Cloudflare supports 10 s or 60 s windows).
   "ratelimits": [{ "name": "LOGIN_LIMITER", "namespace_id": "1602", "simple": { "limit": 10, "period": 60 } }],

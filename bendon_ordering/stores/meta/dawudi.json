@@ -1,0 +1,14 @@
+{
+  "slug": "dawudi",
+  "source_shop_id": 634428,
+  "name": "大無敵烤肉飯",
+  "name_is_fictional": false,
+  "blurb": "烤肉飯、烤雞腿飯 · 臺北市內湖區",
+  "description": "a grilled-meat rice-box (烤肉飯) shop at 臺北市內湖區民權東路六段39號",
+  "delivery": null,
+  "signatures": [],
+  "pickup_minutes": 15,
+  "delivery_minutes": 0,
+  "rename": {},
+  "price_fixes": {}
+}

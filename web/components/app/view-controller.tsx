@@ -30,9 +30,16 @@ const VIEW_MOTION_PROPS = {
 interface ViewControllerProps {
   isVideoInputSupported: boolean;
   tagline?: string;
+  store?: string;
+  onStoreChange?: (slug: string) => void;
 }
 
-export function ViewController({ isVideoInputSupported, tagline }: ViewControllerProps) {
+export function ViewController({
+  isVideoInputSupported,
+  tagline,
+  store,
+  onStoreChange,
+}: ViewControllerProps) {
   const { isConnected, start } = useSessionContext();
   const agent = useAgent();
   const { resolvedTheme } = useTheme();
@@ -46,6 +53,8 @@ export function ViewController({ isVideoInputSupported, tagline }: ViewControlle
           {...VIEW_MOTION_PROPS}
           startButtonText="Start call"
           tagline={tagline}
+          store={store}
+          onStoreChange={onStoreChange}
           onStartCall={start}
         />
       )}

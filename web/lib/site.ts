@@ -14,4 +14,17 @@ export const SITE = {
   htmlLang: process.env.NEXT_PUBLIC_HTML_LANG ?? 'en',
   // Live order view fed by the agent's "bendon.order" text stream.
   orderPanel: process.env.NEXT_PUBLIC_ORDER_PANEL === '1',
+  // Stores the caller can pick before the call (bendon demo, #22); empty = no picker.
+  stores: parseStores(process.env.NEXT_PUBLIC_STORES),
 };
+
+export type StoreOption = { slug: string; name: string; blurb: string; delivers: boolean };
+
+function parseStores(raw: string | undefined): StoreOption[] {
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as StoreOption[];
+  } catch {
+    return [];
+  }
+}

@@ -1,4 +1,4 @@
-"""Menu data (menu.json snapshot) and fuzzy, homophone-tolerant item search.
+"""Store data (stores/<slug>.json snapshots) and fuzzy, homophone-tolerant item search.
 
 Callers' words arrive through STT, so a dish can come in misrecognized (滷魚粥 for 鱸魚粥),
 in shorthand (排骨飯 for 炸排骨飯) or in Simplified characters. Matching therefore scores each
@@ -15,10 +15,17 @@ from functools import lru_cache
 
 from pypinyin import lazy_pinyin
 
-_MENU_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "menu.json")
+_STORES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stores")
+DEFAULT_STORE = "aibi"
 
 # Quantity / packaging words a caller may attach to a dish name ("兩個排骨飯", "粥一碗").
 _NOISE = re.compile(r"[\s，。、,.!?！？]|[一二兩三四五六七八九十\d]+(個|份|碗|盒|杯|盤)|(個|份|碗|盒|杯|盤)$")
+
+
+@dataclass(frozen=True)
+class Variant:
+    name: str  # e.g. 白飯 / 五穀飯
+    price: int
 
 
 @dataclass(frozen=True)
@@ -26,27 +33,68 @@ class MenuItem:
     id: str
     category: str
     name: str
-    price: int
+    price: int  # cheapest variant when there are variants
+    variants: tuple[Variant, ...] = ()
+
+    def variant(self, name: str) -> Variant | None:
+        want = name.strip()
+        return next((v for v in self.variants if v.name == want or want in v.name), None)
+
+    def describe(self) -> str:
+        if not self.variants:
+            return f"[{self.id}] {self.name} {self.price}"
+        vs = " / ".join(f"{v.name} {v.price}" for v in self.variants)
+        return f"[{self.id}] {self.name} (variants: {vs})"
 
 
-@lru_cache(maxsize=1)
-def load_menu() -> dict:
-    with open(_MENU_PATH, encoding="utf-8") as f:
-        data = json.load(f)
-    data["by_id"] = {i["id"]: MenuItem(**i) for i in data["items"]}
-    return data
+class Store:
+    """One shop: meta (name, fulfillment rules, signatures...) + its menu."""
+
+    def __init__(self, data: dict) -> None:
+        self.slug: str = data["slug"]
+        self.name: str = data["name"]
+        self.spoken_name: str = data.get("spoken_name") or data["name"]
+        self.blurb: str = data.get("blurb", "")
+        self.description: str = data.get("description", "")
+        self.address: str = data.get("address", "")
+        self.delivery: dict | None = data.get("delivery")  # None = pickup only
+        self.signatures: list[str] = data.get("signatures", [])
+        self.pickup_minutes: int = data.get("pickup_minutes", 20)
+        self.delivery_minutes: int = data.get("delivery_minutes", 40)
+        self.categories: list[str] = data.get("categories", [])
+        self.items: list[MenuItem] = [
+            MenuItem(i["id"], i["category"], i["name"], i["price"],
+                     tuple(Variant(v["name"], v["price"]) for v in i.get("variants", [])))
+            for i in data["items"]
+        ]
+        self._by_id = {it.id: it for it in self.items}
+
+    @property
+    def delivers(self) -> bool:
+        return self.delivery is not None
+
+    def get(self, item_id: str) -> MenuItem | None:
+        return self._by_id.get(item_id)
+
+    def search(self, query: str, limit: int = 5, threshold: float = 0.45) -> list[tuple[MenuItem, float]]:
+        scored = sorted(((it, score(query, it)) for it in self.items), key=lambda t: -t[1])
+        best = [(it, sc) for it, sc in scored[:limit] if sc >= threshold]
+        # If there's a clear exact/near-exact winner, don't bury it among weak alternatives.
+        if best and best[0][1] >= 0.95:
+            best = [b for b in best if b[1] >= 0.8]
+        return best
 
 
-def items() -> list[MenuItem]:
-    return list(load_menu()["by_id"].values())
+def store_slugs() -> list[str]:
+    return sorted(f[:-5] for f in os.listdir(_STORES_DIR) if f.endswith(".json"))
 
 
-def categories() -> list[str]:
-    return load_menu()["categories"]
-
-
-def get(item_id: str) -> MenuItem | None:
-    return load_menu()["by_id"].get(item_id)
+@lru_cache(maxsize=None)
+def load_store(slug: str) -> Store:
+    if slug not in store_slugs():
+        raise ValueError(f"unknown store {slug!r}; known: {store_slugs()}")
+    with open(os.path.join(_STORES_DIR, f"{slug}.json"), encoding="utf-8") as f:
+        return Store(json.load(f))
 
 
 def _norm(text: str) -> str:
@@ -102,12 +150,3 @@ def _score_one(q: str, item: MenuItem) -> float:
     pq, pn = _py(q), _py(n)
     pinyin = _lcs(pq, pn) / max(len(pq), len(pn))
     return max(chars, pinyin) * 0.9
-
-
-def search(query: str, limit: int = 5, threshold: float = 0.45) -> list[tuple[MenuItem, float]]:
-    scored = sorted(((it, score(query, it)) for it in items()), key=lambda t: -t[1])
-    best = [(it, s) for it, s in scored[:limit] if s >= threshold]
-    # If there's a clear exact/near-exact winner, don't bury it among weak alternatives.
-    if best and best[0][1] >= 0.95:
-        best = [b for b in best if b[1] >= 0.8]
-    return best

@@ -1,0 +1,207 @@
+{
+ "slug": "dawudi",
+ "source_shop_id": 634428,
+ "name": "大無敵烤肉飯",
+ "name_is_fictional": false,
+ "blurb": "烤肉飯、烤雞腿飯 · 臺北市內湖區",
+ "description": "a grilled-meat rice-box (烤肉飯) shop at 臺北市內湖區民權東路六段39號",
+ "delivery": null,
+ "signatures": [],
+ "pickup_minutes": 15,
+ "delivery_minutes": 0,
+ "source": "https://dinbendon.itsi.xyz/shop/634428",
+ "source_updated": "2026/05/04 13:43",
+ "source_notice": "",
+ "address": "臺北市內湖區民權東路六段39號",
+ "snapshot_date": "2026-09-30",
+ "price_fixes_applied": {},
+ "categories": [],
+ "items": [
+  {
+   "id": "c01i01",
+   "category": "",
+   "name": "烤肉飯",
+   "price": 115
+  },
+  {
+   "id": "c01i02",
+   "category": "",
+   "name": "烤五花肉飯",
+   "price": 115
+  },
+  {
+   "id": "c01i03",
+   "category": "",
+   "name": "烤雞腿飯",
+   "price": 120
+  },
+  {
+   "id": "c01i04",
+   "category": "",
+   "name": "烤鯖魚飯",
+   "price": 120
+  },
+  {
+   "id": "c01i05",
+   "category": "",
+   "name": "烤雞排飯",
+   "price": 120
+  },
+  {
+   "id": "c01i06",
+   "category": "",
+   "name": "烤無敵雞菲力飯",
+   "price": 130
+  },
+  {
+   "id": "c01i07",
+   "category": "",
+   "name": "烤排骨飯",
+   "price": 115
+  },
+  {
+   "id": "c01i08",
+   "category": "",
+   "name": "烤雞軟骨飯",
+   "price": 130
+  },
+  {
+   "id": "c01i09",
+   "category": "",
+   "name": "烤無敵牛肉飯",
+   "price": 160
+  },
+  {
+   "id": "c01i10",
+   "category": "",
+   "name": "烤魷魚飯",
+   "price": 165
+  },
+  {
+   "id": "c01i11",
+   "category": "",
+   "name": "菜飯",
+   "price": 85
+  },
+  {
+   "id": "c01i12",
+   "category": "",
+   "name": "炸香酥雞腿飯",
+   "price": 120
+  },
+  {
+   "id": "c01i13",
+   "category": "",
+   "name": "炸香酥雞排飯",
+   "price": 120
+  },
+  {
+   "id": "c01i14",
+   "category": "",
+   "name": "炸香酥無敵雞菲力飯",
+   "price": 130
+  },
+  {
+   "id": "c01i15",
+   "category": "",
+   "name": "炸香酥魚排飯",
+   "price": 120
+  },
+  {
+   "id": "c01i16",
+   "category": "",
+   "name": "炸香酥排骨飯",
+   "price": 115
+  },
+  {
+   "id": "c01i17",
+   "category": "",
+   "name": "烤無敵牛肉單點",
+   "price": 110
+  },
+  {
+   "id": "c01i18",
+   "category": "",
+   "name": "炸雞腿單點",
+   "price": 90
+  },
+  {
+   "id": "c01i19",
+   "category": "",
+   "name": "烤雞腿單點",
+   "price": 90
+  },
+  {
+   "id": "c01i20",
+   "category": "",
+   "name": "炸雞排單點",
+   "price": 90
+  },
+  {
+   "id": "c01i21",
+   "category": "",
+   "name": "烤雞排單點",
+   "price": 90
+  },
+  {
+   "id": "c01i22",
+   "category": "",
+   "name": "烤排骨單點",
+   "price": 90
+  },
+  {
+   "id": "c01i23",
+   "category": "",
+   "name": "炸排骨單點",
+   "price": 90
+  },
+  {
+   "id": "c01i24",
+   "category": "",
+   "name": "烤鯖魚單點",
+   "price": 90
+  },
+  {
+   "id": "c01i25",
+   "category": "",
+   "name": "烤五花單點",
+   "price": 80
+  },
+  {
+   "id": "c01i26",
+   "category": "",
+   "name": "烤雞軟骨單點",
+   "price": 90
+  },
+  {
+   "id": "c01i27",
+   "category": "",
+   "name": "烤肉單點",
+   "price": 80
+  },
+  {
+   "id": "c01i28",
+   "category": "",
+   "name": "炸無敵雞菲力單點",
+   "price": 90
+  },
+  {
+   "id": "c01i29",
+   "category": "",
+   "name": "烤族迪雞菲力單點",
+   "price": 90
+  },
+  {
+   "id": "c01i30",
+   "category": "",
+   "name": "烤魷魚單點",
+   "price": 110
+  },
+  {
+   "id": "c01i31",
+   "category": "",
+   "name": "炸魚排單點",
+   "price": 80
+  }
+ ]
+}

@@ -1,3 +1,4 @@
+import { StorePicker } from '@/components/app/store-picker';
 import { Button } from '@/components/ui/button';
 import { SITE } from '@/lib/site';
 
@@ -22,12 +23,16 @@ function WelcomeImage() {
 interface WelcomeViewProps {
   startButtonText: string;
   tagline?: string;
+  store?: string;
+  onStoreChange?: (slug: string) => void;
   onStartCall: () => void;
 }
 
 export const WelcomeView = ({
   startButtonText,
   tagline,
+  store,
+  onStoreChange,
   onStartCall,
   ref,
 }: React.ComponentProps<'div'> & WelcomeViewProps) => {
@@ -39,6 +44,10 @@ export const WelcomeView = ({
         <p className="text-foreground max-w-prose pt-1 leading-6 font-medium">{SITE.heading}</p>
         {tagline && <p className="text-muted-foreground pt-1 text-sm">{tagline}</p>}
         {SITE.disclaimer && <p className="text-muted-foreground pt-1 text-xs">{SITE.disclaimer}</p>}
+
+        {SITE.stores.length > 0 && store && onStoreChange && (
+          <StorePicker stores={SITE.stores} value={store} onChange={onStoreChange} />
+        )}
 
         <Button
           size="lg"
