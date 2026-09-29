@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { TokenSource } from 'livekit-client';
 import { useSession } from '@livekit/components-react';
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr';
@@ -45,13 +45,26 @@ export function App({
     [tokenServerId, tokenEndpoint]
   );
 
-  const session = useSession(tokenSource, agentName ? { agentName } : undefined);
+  // The picked store travels as dispatch metadata; the token endpoint validates it (#22).
+  const [store, setStore] = useState(SITE.stores[0]?.slug ?? '');
+  const sessionOptions = useMemo(() => {
+    const opts: { agentName?: string; agentMetadata?: string } = {};
+    if (agentName) opts.agentName = agentName;
+    if (store) opts.agentMetadata = JSON.stringify({ store });
+    return Object.keys(opts).length ? opts : undefined;
+  }, [agentName, store]);
+  const session = useSession(tokenSource, sessionOptions);
 
   return (
     <AgentSessionProvider session={session}>
       <AppSetup />
       <main className="grid h-svh grid-cols-1 place-content-center">
-        <ViewController isVideoInputSupported={isVideoInputSupported} tagline={tagline} />
+        <ViewController
+          isVideoInputSupported={isVideoInputSupported}
+          tagline={tagline}
+          store={store}
+          onStoreChange={setStore}
+        />
       </main>
       {SITE.orderPanel && <OrderPanel />}
       <StartAudioButton label="Start Audio" />

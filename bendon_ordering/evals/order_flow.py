@@ -1,4 +1,4 @@
-"""Scripted-caller evals for the 愛比食堂 order-taker (issue #20).
+"""Scripted-caller evals for the voice order-taker, per store (issues #20, #22).
 
 A keyword-driven caller answers whatever the agent asks (text only, real tools and order
 state), and each scenario is scored on the *final order*: dishes, quantities, total,
@@ -17,16 +17,19 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import agent  # noqa: E402
+import menu  # noqa: E402
 
 from livekit.agents import AgentSession  # noqa: E402
 
 SCENARIOS = {
     "pickup": {
+        "store": "aibi",
         "items": ["我要兩個排骨飯，一個皮蛋粥。"],
         "mode": "自取。", "time": "十二點半。", "address": "",
         "expect": {"lines": {"炸排骨飯": 2, "皮蛋瘦肉粥": 1}, "total": 300, "mode": "pickup"},
     },
     "delivery_minimum": {
+        "store": "aibi",
         # 滷魚粥 = homophone of 鱸魚粥 (205): below the 350 delivery minimum until 三杯雞 (200).
         "items": ["我要一碗滷魚粥，外送。"],
         "mode": "外送。", "time": "盡快。", "address": "台北市中正區寧波西街五號。",
@@ -34,9 +37,24 @@ SCENARIOS = {
         "expect": {"lines": {"鱸魚粥": 1, "三杯雞": 1}, "total": 405, "mode": "delivery"},
     },
     "modify": {
+        "store": "aibi",
         "items": ["我要一個蝦仁蛋炒飯，還有一碗番茄蛋花湯。", "炒飯改成兩個。", "湯不要了。"],
         "mode": "自取。", "time": "盡快。", "address": "",
         "expect": {"lines": {"蝦仁蛋炒飯": 2}, "total": 250, "mode": "pickup"},
+    },
+    "dawudi_pickup": {
+        "store": "dawudi",
+        "items": ["我要兩個烤肉飯，一個烤雞腿飯。"],
+        "mode": "自取。", "time": "十二點。", "address": "",
+        "expect": {"lines": {"烤肉飯": 2, "烤雞腿飯": 1}, "total": 350, "mode": "pickup"},
+    },
+    "yujia_variants": {
+        # The 三寶飯 needs a rice choice; the caller also asks for delivery (pickup-only store).
+        "store": "yujia",
+        "items": ["我要一個玫瑰油雞飯五穀飯，兩個金牌三寶飯。"],
+        "variant": "白飯。",
+        "mode": "可以外送嗎？", "time": "盡快。", "address": "",
+        "expect": {"lines": {"玫瑰油雞飯（五穀飯）": 1, "金牌三寶飯（白飯）": 2}, "total": 380, "mode": "pickup"},
     },
 }
 CONTACT = "我叫王小明，電話零九一二三四五六七八。"
@@ -46,6 +64,10 @@ def reply_for(text: str, sc: dict, state: dict) -> str:
     t = text.lower()
     last = [x for x in re.split(r"[。！？!?]", t) if x.strip()]
     last = last[-1] if last else t
+    if re.search(r"只提供自取|只能自取|不提供外送|沒有外送|不外送|無法外送", t):
+        return "好，那我自取。"
+    if re.search(r"白飯.{0,6}五穀飯|五穀飯.{0,6}白飯", last) and sc.get("variant"):
+        return sc["variant"]
     if re.search(r"三百五|350|最低|門檻|不足|差", t) and sc.get("upsell") and not state.get("upsold"):
         state["upsold"] = True
         return sc["upsell"]
@@ -72,13 +94,13 @@ def reply_for(text: str, sc: dict, state: dict) -> str:
 
 async def run(name: str) -> dict:
     sc = SCENARIOS[name]
-    ud = agent.Userdata(room=None)
+    ud = agent.Userdata(store=menu.load_store(sc["store"]), room=None)
     state = {"queue": list(sc["items"])}
     transcript = []
     async with agent.build_llm() as llm, AgentSession(
         llm=llm, userdata=ud, max_tool_steps=5, conn_options=agent.session_conn_options()
     ) as session:
-        await session.start(agent.OrderTaker())
+        await session.start(agent.OrderTaker(ud.store))
         line = state["queue"].pop(0)
         for _ in range(20):
             transcript.append(f"CALLER: {line}")
@@ -96,7 +118,7 @@ async def run(name: str) -> dict:
                 break
             line = reply_for(reply, sc, state)
     o = ud.order
-    got = {ln.name: ln.quantity for ln in o.lines}
+    got = {ln.label: ln.quantity for ln in o.lines}
     exp = sc["expect"]
     ok = o.status == "confirmed" and got == exp["lines"] and o.total == exp["total"] and o.mode == exp["mode"]
     return {"scenario": name, "ok": ok, "status": o.status, "lines": got, "total": o.total,

@@ -1,0 +1,364 @@
+{
+ "slug": "yujia",
+ "source_shop_id": 302354,
+ "name": "裕佳精緻燒臘(內湖店)",
+ "spoken_name": "裕佳精緻燒臘內湖店",
+ "name_is_fictional": false,
+ "blurb": "港式燒臘飯（白飯／五穀飯）· 臺北市內湖區",
+ "description": "a Cantonese roast-meat (燒臘) rice-box shop at 內湖路一段91巷10號, 臺北市內湖區; every dish comes with 白飯 or 五穀飯",
+ "delivery": null,
+ "signatures": [],
+ "pickup_minutes": 15,
+ "delivery_minutes": 0,
+ "source": "https://dinbendon.itsi.xyz/shop/302354",
+ "source_updated": "2026/04/10 08:38",
+ "source_notice": "",
+ "address": "內湖路 一段91巷10號",
+ "snapshot_date": "2026-09-30",
+ "price_fixes_applied": {
+  "叉燒香腸飯|五穀飯": {
+   "from": 1210,
+   "to": 120,
+   "why": "source typo: 白飯 is 120 and every other dish prices 五穀飯 the same as 白飯"
+  }
+ },
+ "categories": [],
+ "items": [
+  {
+   "id": "c01i01",
+   "category": "",
+   "name": "玫瑰油雞飯",
+   "price": 120,
+   "variants": [
+    {
+     "name": "白飯",
+     "price": 120
+    },
+    {
+     "name": "五穀飯",
+     "price": 120
+    }
+   ]
+  },
+  {
+   "id": "c01i02",
+   "category": "",
+   "name": "金牌三寶飯",
+   "price": 130,
+   "variants": [
+    {
+     "name": "白飯",
+     "price": 130
+    },
+    {
+     "name": "五穀飯",
+     "price": 130
+    }
+   ]
+  },
+  {
+   "id": "c01i03",
+   "category": "",
+   "name": "明爐鴨腿飯",
+   "price": 150,
+   "variants": [
+    {
+     "name": "白飯",
+     "price": 150
+    },
+    {
+     "name": "五穀飯",
+     "price": 150
+    }
+   ]
+  },
+  {
+   "id": "c01i04",
+   "category": "",
+   "name": "至尊招牌飯",
+   "price": 150,
+   "variants": [
+    {
+     "name": "白飯",
+     "price": 150
+    },
+    {
+     "name": "五穀飯",
+     "price": 150
+    }
+   ]
+  },
+  {
+   "id": "c01i05",
+   "category": "",
+   "name": "御膳五寶飯",
+   "price": 170,
+   "variants": [
+    {
+     "name": "白飯",
+     "price": 170
+    },
+    {
+     "name": "五穀飯",
+     "price": 170
+    }
+   ]
+  },
+  {
+   "id": "c01i06",
+   "category": "",
+   "name": "脆皮燒肉飯",
+   "price": 120,
+   "variants": [
+    {
+     "name": "白飯",
+     "price": 120
+    },
+    {
+     "name": "五穀飯",
+     "price": 120
+    }
+   ]
+  },
+  {
+   "id": "c01i07",
+   "category": "",
+   "name": "廣東臘味飯",
+   "price": 130,
+   "variants": [
+    {
+     "name": "白飯",
+     "price": 130
+    },
+    {
+     "name": "五穀飯",
+     "price": 130
+    }
+   ]
+  },
+  {
+   "id": "c01i08",
+   "category": "",
+   "name": "脆皮燒鴨飯",
+   "price": 120,
+   "variants": [
+    {
+     "name": "白飯",
+     "price": 120
+    },
+    {
+     "name": "五穀飯",
+     "price": 120
+    }
+   ]
+  },
+  {
+   "id": "c01i09",
+   "category": "",
+   "name": "蜜汁叉燒飯",
+   "price": 120,
+   "variants": [
+    {
+     "name": "白飯",
+     "price": 120
+    },
+    {
+     "name": "五穀飯",
+     "price": 120
+    }
+   ]
+  },
+  {
+   "id": "c01i10",
+   "category": "",
+   "name": "玫瑰油雞腿飯",
+   "price": 130,
+   "variants": [
+    {
+     "name": "白飯",
+     "price": 130
+    },
+    {
+     "name": "五穀飯",
+     "price": 130
+    }
+   ]
+  },
+  {
+   "id": "c01i11",
+   "category": "",
+   "name": "燒鴨叉燒飯",
+   "price": 120,
+   "variants": [
+    {
+     "name": "白飯",
+     "price": 120
+    },
+    {
+     "name": "五穀飯",
+     "price": 120
+    }
+   ]
+  },
+  {
+   "id": "c01i12",
+   "category": "",
+   "name": "燒鴨香腸飯",
+   "price": 120,
+   "variants": [
+    {
+     "name": "白飯",
+     "price": 120
+    },
+    {
+     "name": "五穀飯",
+     "price": 120
+    }
+   ]
+  },
+  {
+   "id": "c01i13",
+   "category": "",
+   "name": "燒鴨油雞飯",
+   "price": 120,
+   "variants": [
+    {
+     "name": "白飯",
+     "price": 120
+    },
+    {
+     "name": "五穀飯",
+     "price": 120
+    }
+   ]
+  },
+  {
+   "id": "c01i14",
+   "category": "",
+   "name": "燒鴨燒肉飯",
+   "price": 120,
+   "variants": [
+    {
+     "name": "白飯",
+     "price": 120
+    },
+    {
+     "name": "五穀飯",
+     "price": 120
+    }
+   ]
+  },
+  {
+   "id": "c01i15",
+   "category": "",
+   "name": "油雞燒肉飯",
+   "price": 120,
+   "variants": [
+    {
+     "name": "白飯",
+     "price": 120
+    },
+    {
+     "name": "五穀飯",
+     "price": 120
+    }
+   ]
+  },
+  {
+   "id": "c01i16",
+   "category": "",
+   "name": "油雞叉燒飯",
+   "price": 120,
+   "variants": [
+    {
+     "name": "白飯",
+     "price": 120
+    },
+    {
+     "name": "五穀飯",
+     "price": 120
+    }
+   ]
+  },
+  {
+   "id": "c01i17",
+   "category": "",
+   "name": "油雞香腸飯",
+   "price": 120,
+   "variants": [
+    {
+     "name": "白飯",
+     "price": 120
+    },
+    {
+     "name": "五穀飯",
+     "price": 120
+    }
+   ]
+  },
+  {
+   "id": "c01i18",
+   "category": "",
+   "name": "叉燒香腸飯",
+   "price": 120,
+   "variants": [
+    {
+     "name": "白飯",
+     "price": 120
+    },
+    {
+     "name": "五穀飯",
+     "price": 120
+    }
+   ]
+  },
+  {
+   "id": "c01i19",
+   "category": "",
+   "name": "燒肉叉燒飯",
+   "price": 120,
+   "variants": [
+    {
+     "name": "白飯",
+     "price": 120
+    },
+    {
+     "name": "五穀飯",
+     "price": 120
+    }
+   ]
+  },
+  {
+   "id": "c01i20",
+   "category": "",
+   "name": "燒肉香腸飯",
+   "price": 120,
+   "variants": [
+    {
+     "name": "白飯",
+     "price": 120
+    },
+    {
+     "name": "五穀飯",
+     "price": 120
+    }
+   ]
+  },
+  {
+   "id": "c01i21",
+   "category": "",
+   "name": "蜜汁燒雞腿飯",
+   "price": 130,
+   "variants": [
+    {
+     "name": "白飯",
+     "price": 130
+    },
+    {
+     "name": "五穀飯",
+     "price": 130
+    }
+   ]
+  }
+ ]
+}

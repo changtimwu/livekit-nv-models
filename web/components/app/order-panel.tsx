@@ -13,6 +13,7 @@ type OrderLine = {
   note: string;
 };
 type OrderSnapshot = {
+  store?: string;
   status: 'open' | 'confirmed' | 'cancelled';
   order_no: string;
   lines: OrderLine[];
@@ -51,7 +52,7 @@ export function OrderPanel() {
   return (
     <aside className="bg-background/90 text-foreground fixed top-4 right-4 left-4 z-40 max-h-[45vh] overflow-auto rounded-xl border p-4 text-sm shadow-lg backdrop-blur md:left-auto md:w-80">
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="font-semibold">你的訂單</h2>
+        <h2 className="font-semibold">{order.store ? `${order.store} · 訂單` : '你的訂單'}</h2>
         <span className="text-muted-foreground text-xs">
           {STATUS[order.status]}
           {order.order_no && ` · 單號 ${order.order_no}`}

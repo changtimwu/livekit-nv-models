@@ -1,0 +1,14 @@
+{
+  "slug": "aibi",
+  "source_shop_id": 300528,
+  "name": "愛比食堂",
+  "name_is_fictional": true,
+  "blurb": "粥、飯、炒飯、熱炒 · 台北市中正區",
+  "description": "a small Taiwanese takeout shop (粥、飯、炒飯、熱炒) in 台北市中正區, near 捷運中正紀念堂站",
+  "delivery": {"minimum": 350, "area_hints": ["中正區", "中正"], "area_text": "台北市中正區（捷運中正紀念堂站兩站範圍內）"},
+  "signatures": ["超跩粥", "皮蛋瘦肉粥", "炸排骨飯", "蝦仁蛋炒飯", "三杯雞", "超跩菜脯蛋"],
+  "pickup_minutes": 20,
+  "delivery_minutes": 40,
+  "rename": {"category:丼飯": "{name}丼飯"},
+  "price_fixes": {}
+}

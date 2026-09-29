@@ -193,7 +193,7 @@ local limit: Qwen3-8B is unreliable in Mandarin; it once invented a confirmation
 calling the agent from anywhere. There are two password-protected demos:
 - `https://hotelbooking.wormhole.work`: local models, served from the Mac through a Cloudflare Tunnel (`deploy/demos.sh`).
 - `https://hotel-tw.wormhole.work`: cloud, Taiwan Mandarin, fully off the Mac. The web app is a Cloudflare Worker and the agent is hosted on LiveKit Cloud.
-- `https://bendon.wormhole.work`: **愛比食堂**, a second app that takes lunchbox / takeout orders by voice, with a live order view. See [`bendon_ordering/README.md`](bendon_ordering/README.md).
+- `https://bendon.wormhole.work`: a second app that takes lunchbox / takeout orders by voice for the store you pick (愛比食堂, 大無敵烤肉飯, 裕佳精緻燒臘), with a live order view. See [`bendon_ordering/README.md`](bendon_ordering/README.md).
 
 Code shared by both apps (model backends, language profiles, local MLX STT) lives in `voiceshared/`.
 Deploy hosted agents with `deploy/agent_deploy.sh <app>`. Setup, configuration and known limits: [`web/README-hotel.md`](web/README-hotel.md);
