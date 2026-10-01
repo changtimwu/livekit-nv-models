@@ -1,0 +1,47 @@
+{
+  "slug": "getpower",
+  "source_shop_id": null,
+  "name": "GET POWER 給力盒子(古亭店)",
+  "spoken_name": "GET POWER 給力盒子古亭店",
+  "name_is_fictional": false,
+  "blurb": "低卡高蛋白餐盒 · 台北市中正區（古亭）",
+  "description": "a low-calorie, high-protein meal-box (餐盒) shop at 羅斯福路二段48巷3號, near 捷運古亭站; every box comes with a choice of rice portion, extra vegetables and a set drink",
+  "address": "台北市中正區羅斯福路二段48巷3號",
+  "delivery": null,
+  "delivery_note": "外送請透過 Uber Eats 或 Foodpanda 下單",
+  "signatures": ["椒鹽水煮雞胸餐盒", "大厚切烤鮭魚餐盒", "南加州烤雞腿餐盒"],
+  "pickup_minutes": 15,
+  "delivery_minutes": 0,
+  "manual_menu": {
+    "source": "getpowerbox.txt (a Gemini conversation; issue #24). Not from a store page: the dinbendon listing 921585282 has no menu. Calories match the chain's Uber Eats pages; prices vary by branch and are unverified for 古亭.",
+    "assumptions": [
+      "The set drink is included in the box price (Gemini: main meals include a beverage choice).",
+      "加菜 costs +40: Gemini's sample order is 大厚切烤鮭魚餐盒 380 + 加菜 = 420.",
+      "Standalone drinks are listed as $35-$40: 豆漿(微甜) 35, 黑芝麻燕麥 40, in the listed order."
+    ],
+    "items": [
+      {"name": "椒鹽水煮雞胸餐盒", "price": 220, "kcal": 605, "options": ["rice", "veg", "drink"]},
+      {"name": "塔香烘烤雞胸餐盒", "price": 220, "kcal": 613, "options": ["rice", "veg", "drink"]},
+      {"name": "泰式打拋雞胸餐盒", "price": 220, "kcal": 596, "options": ["rice", "veg", "drink"]},
+      {"name": "南加州烤雞腿餐盒", "price": 240, "kcal": 714, "options": ["rice", "veg", "drink"]},
+      {"name": "蒜泥醬豬肉片餐盒", "price": 220, "kcal": 623, "options": ["rice", "veg", "drink"]},
+      {"name": "樹子汁蒸鱸魚餐盒", "price": 245, "kcal": 556, "options": ["rice", "veg", "drink"]},
+      {"name": "鹽烤馬加魚餐盒", "price": 225, "kcal": 594, "options": ["rice", "veg", "drink"]},
+      {"name": "十三香滷牛腱餐盒", "price": 280, "kcal": 573, "options": ["rice", "veg", "drink"]},
+      {"name": "大厚切烤鮭魚餐盒", "price": 380, "kcal": 690, "options": ["rice", "veg", "drink"]},
+      {"name": "豆漿(微甜)", "price": 35},
+      {"name": "黑芝麻燕麥", "price": 40}
+    ]
+  },
+  "option_groups": [
+    {"id": "rice", "name": "飯量", "default": "正常",
+     "choices": [{"name": "正常", "price": 0}, {"name": "飯少", "price": 0}, {"name": "不要飯", "price": 0}]},
+    {"id": "veg", "name": "蔬菜", "default": "標準",
+     "choices": [{"name": "標準", "price": 0}, {"name": "加菜", "price": 40}]},
+    {"id": "drink", "name": "套餐飲品", "default": null,
+     "choices": [{"name": "微甜豆漿", "price": 0}, {"name": "無糖豆漿", "price": 0},
+                 {"name": "黑芝麻燕麥", "price": 0}, {"name": "無糖茶", "price": 0}]}
+  ],
+  "rename": {},
+  "price_fixes": {}
+}

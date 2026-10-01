@@ -56,6 +56,18 @@ SCENARIOS = {
         "mode": "可以外送嗎？", "time": "盡快。", "address": "",
         "expect": {"lines": {"玫瑰油雞飯（五穀飯）": 1, "金牌三寶飯（白飯）": 2}, "total": 380, "mode": "pickup"},
     },
+    "getpower_options": {
+        # #24: a calorie question (answer only from data), multi-option boxes where the set
+        # drink has no default (must be asked), 加菜 +40, and a scheduled pickup.
+        "store": "getpower",
+        "items": ["請問大厚切烤鮭魚餐盒幾卡？", "好，我要一個大厚切烤鮭魚餐盒，飯少加菜。",
+                  "再一個椒鹽水煮雞胸餐盒，無糖豆漿。"],
+        "drink": "黑芝麻燕麥。",
+        "mode": "自取。", "time": "明天中午十二點。", "address": "",
+        "say": ["六百九十"],  # the kcal answer must come from the data (690)
+        "expect": {"lines": {"大厚切烤鮭魚餐盒（飯少・加菜・黑芝麻燕麥）": 1, "椒鹽水煮雞胸餐盒（無糖豆漿）": 1},
+                   "total": 640, "mode": "pickup"},
+    },
 }
 CONTACT = "我叫王小明，電話零九一二三四五六七八。"
 
@@ -68,6 +80,9 @@ def reply_for(text: str, sc: dict, state: dict) -> str:
         return "好，那我自取。"
     if re.search(r"白飯.{0,6}五穀飯|五穀飯.{0,6}白飯", last) and sc.get("variant"):
         return sc["variant"]
+    if re.search(r"飲品|飲料|豆漿|燕麥|無糖茶", last) and sc.get("drink") and not state.get("drink_given"):
+        state["drink_given"] = True
+        return sc["drink"]
     if re.search(r"三百五|350|最低|門檻|不足|差", t) and sc.get("upsell") and not state.get("upsold"):
         state["upsold"] = True
         return sc["upsell"]
@@ -120,8 +135,11 @@ async def run(name: str) -> dict:
     o = ud.order
     got = {ln.label: ln.quantity for ln in o.lines}
     exp = sc["expect"]
-    ok = o.status == "confirmed" and got == exp["lines"] and o.total == exp["total"] and o.mode == exp["mode"]
-    return {"scenario": name, "ok": ok, "status": o.status, "lines": got, "total": o.total,
+    said = " ".join(t for t in transcript if t.startswith("AGENT"))
+    missing_say = [w for w in sc.get("say", []) if w not in said]
+    ok = (o.status == "confirmed" and got == exp["lines"] and o.total == exp["total"]
+          and o.mode == exp["mode"] and not missing_say)
+    return {"scenario": name, "ok": ok, "missing_say": missing_say, "status": o.status, "lines": got, "total": o.total,
             "mode": o.mode, "order_no": o.order_no, "transcript": transcript}
 
 
@@ -132,7 +150,7 @@ async def main() -> None:
     results = [await run(n) for n in names]
     for r in results:
         print("\n".join(r["transcript"]))
-        print(f"==> {r['scenario']}: {'PASS' if r['ok'] else 'FAIL'} status={r['status']} "
+        print(f"==> {r['scenario']}: {'PASS' if r['ok'] else 'FAIL'} missing_say={r['missing_say']} status={r['status']} "
               f"lines={r['lines']} total={r['total']} mode={r['mode']} no={r['order_no']}\n")
     print("SUMMARY:", ", ".join(f"{r['scenario']}={'PASS' if r['ok'] else 'FAIL'}" for r in results))
 

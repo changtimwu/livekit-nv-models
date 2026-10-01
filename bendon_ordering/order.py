@@ -11,7 +11,7 @@ import random
 import re
 from dataclasses import dataclass, field
 
-from menu import Store
+from menu import MenuItem, Store
 
 # Fulfillment rules come from the store (stores/meta/<slug>.json). Stores whose source lists no
 # delivery rules are pickup only (#22). Delivery areas are checked by address hints - there's
@@ -30,10 +30,13 @@ class Line:
     quantity: int
     note: str = ""
     variant: str = ""  # e.g. 白飯 / 五穀飯
+    options: tuple[str, ...] = ()  # chosen option names, in group order (#24)
+    shown_options: tuple[str, ...] = ()  # the non-default ones, for the label
 
     @property
     def label(self) -> str:
-        return f"{self.name}（{self.variant}）" if self.variant else self.name
+        parts = ([self.variant] if self.variant else []) + list(self.shown_options)
+        return f"{self.name}（{'・'.join(parts)}）" if parts else self.name
 
     @property
     def amount(self) -> int:
@@ -53,15 +56,47 @@ class Order:
     order_no: str = ""
 
     # ---- items -------------------------------------------------------------------------
-    def _find(self, item_id: str, variant: str | None = None) -> Line | None:
+    def _find(self, item_id: str, variant: str | None = None,
+              options: tuple[str, ...] | None = None) -> Line | None:
         return next((ln for ln in self.lines
-                     if ln.item_id == item_id and (variant is None or ln.variant == variant)), None)
+                     if ln.item_id == item_id and (variant is None or ln.variant == variant)
+                     and (options is None or ln.options == options)), None)
+
+    @staticmethod
+    def resolve_options(item: MenuItem, spoken: str) -> tuple[tuple[str, ...], tuple[str, ...], int]:
+        """Map the caller's choices ("飯少、加菜、黑芝麻燕麥") onto the item's option groups.
+        Returns (chosen names in group order, non-default names, price delta)."""
+        tokens = [t for t in re.split(r"[,，、/\s]+", spoken or "") if t]
+        picked: dict[str, str] = {}
+        for tok in tokens:
+            group = next((g for g in item.option_groups if g.choice(tok)), None)
+            if group is None:  # tolerate a longer phrase containing the choice ("要加菜")
+                group = next((g for g in item.option_groups for c in g.choices if c.name in tok), None)
+                tok = next((c.name for c in group.choices if c.name in tok), tok) if group else tok
+            if group is None:
+                valid = "; ".join(g.describe() for g in item.option_groups) or "none"
+                raise OrderError(f"{tok!r} isn't an option for {item.name} (options: {valid})")
+            picked[group.id] = tok
+        chosen, shown, delta, missing = [], [], 0, []
+        for g in item.option_groups:
+            name = picked.get(g.id) or g.default
+            if name is None:
+                missing.append(f"{g.name} ({'/'.join(c.name for c in g.choices)})")
+                continue
+            chosen.append(name)
+            if name != g.default:
+                shown.append(name)
+            delta += g.choice(name).price
+        if missing:
+            raise OrderError(f"{item.name} needs a choice of {', '.join(missing)} - ask the caller")
+        return tuple(chosen), tuple(shown), delta
 
     def _require_open(self) -> None:
         if self.status != "open":
             raise OrderError(f"order is already {self.status}")
 
-    def add(self, item_id: str, quantity: int, note: str = "", variant: str = "") -> Line:
+    def add(self, item_id: str, quantity: int, note: str = "", variant: str = "",
+            options: str = "") -> Line:
         self._require_open()
         item = self.store.get(item_id)
         if item is None:
@@ -75,18 +110,28 @@ class Order:
                 opts = " / ".join(x.name for x in item.variants)
                 raise OrderError(f"{item.name} needs a choice of {opts} - ask the caller which one")
             price, chosen = v.price, v.name
-        line = self._find(item_id, chosen)
+        opts, shown, delta = ((), (), 0)
+        if item.option_groups:
+            opts, shown, delta = self.resolve_options(item, options)
+        elif options.strip():
+            raise OrderError(f"{item.name} has no options; put requests in the note instead")
+        price += delta
+        line = self._find(item_id, chosen, opts)
         if line and line.note == note.strip():
             line.quantity += quantity
             return line
-        line = Line(item.id, item.name, price, quantity, note.strip(), chosen)
+        line = Line(item.id, item.name, price, quantity, note.strip(), chosen, opts, shown)
         self.lines.append(line)
         return line
 
     def update(self, item_id: str, quantity: int | None, note: str | None,
-               variant: str | None = None) -> Line | None:
+               variant: str | None = None, options: str | None = None) -> Line | None:
         self._require_open()
-        line = self._find(item_id, variant or None)
+        opts = None
+        item = self.store.get(item_id)
+        if options and item is not None and item.option_groups:
+            opts = self.resolve_options(item, options)[0]
+        line = self._find(item_id, variant or None, opts)
         if line is None:
             raise OrderError(f"{item_id!r} is not in the order")
         if quantity is not None:
@@ -100,8 +145,8 @@ class Order:
             line.note = note.strip()
         return line
 
-    def remove(self, item_id: str, variant: str | None = None) -> None:
-        self.update(item_id, 0, None, variant)
+    def remove(self, item_id: str, variant: str | None = None, options: str | None = None) -> None:
+        self.update(item_id, 0, None, variant, options)
 
     # ---- money -------------------------------------------------------------------------
     @property
@@ -121,7 +166,8 @@ class Order:
         self._require_open()
         rules = self.store.delivery
         if rules is None:
-            raise OrderError("this store is pickup only (自取) - no delivery; offer pickup")
+            note = f" Tell the caller: {self.store.delivery_note}." if self.store.delivery_note else ""
+            raise OrderError(f"this store is pickup only (自取) - no delivery; offer pickup.{note}")
         minimum = rules.get("minimum", 0)
         if self.subtotal < minimum:
             raise OrderError(

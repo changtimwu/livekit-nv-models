@@ -1,35 +1,39 @@
-# Voice order-taker for bendon shops (愛比食堂, 大無敵烤肉飯, 裕佳精緻燒臘)
+# Voice order-taker for bendon shops (愛比食堂, 大無敵烤肉飯, 裕佳精緻燒臘, GET POWER)
 
 A voice agent that answers an incoming call and takes takeout orders in Taiwan Mandarin **for the
 store the caller picks** in the web page. Plans: GitHub issues #20 (the app) and #22 (multiple
-stores). It reuses the patterns from `../hotel_receptionist/` and the shared code in `../voiceshared/`.
+stores) and #24 (GET POWER, multi-option boxes). It reuses the patterns from `../hotel_receptionist/` and the shared code in `../voiceshared/`.
 
 | slug | Store | Menu source | Fulfillment |
 |---|---|---|---|
 | `aibi` (default) | 愛比食堂 (fictional name) | [dinbendon 300528](https://dinbendon.itsi.xyz/shop/300528), 101 items, 8 categories | pickup + delivery (中正區, ≥ NT$350) |
 | `dawudi` | 大無敵烤肉飯 (real name) | [634428](https://dinbendon.itsi.xyz/shop/634428), 31 items | pickup only |
 | `yujia` | 裕佳精緻燒臘(內湖店) (real name) | [302354](https://dinbendon.itsi.xyz/shop/302354), 21 items, all with 白飯 / 五穀飯 variants | pickup only |
+| `getpower` | GET POWER 給力盒子(古亭店) (real name) | **manual menu** from a Gemini conversation (`getpowerbox.txt`); dinbendon [921585282](https://dinbendon.itsi.xyz/shop/921585282) has no menu. 11 items with **kcal**; boxes have **option groups** | pickup only (delivery → Uber Eats / Foodpanda) |
 
 - **Disclaimer:** every call opens with the store name and **「這是語音AI店員的模擬服務，不代表真實店家」**, and the web page says the same. Orders go nowhere.
-- **Pickup only:** stores whose listing gives no delivery rules are pickup only.
+- **Pickup only:** stores whose listing gives no delivery rules are pickup only. A store can have a `delivery_note` (e.g. GET POWER: 外送請透過 Uber Eats 或 Foodpanda 下單), which the agent relays when asked.
+- **GET POWER data is unverified.** Calories match the chain's Uber Eats pages, but prices vary by branch. Three assumptions are recorded in its meta file: the set drink is included, 加菜 is +40, and the standalone drinks are 35 / 40.
 - **Stack:** by default `AGENT_LANGUAGE=zh-tw` on LiveKit Inference (Deepgram nova-3 zh-TW → Gemma 4 31B → Cartesia sonic-3.6), with the zh-tw speech workarounds from #18.
 
 ## Pieces
 
 | File | What |
 |---|---|
-| `stores/meta/<slug>.json` | hand-maintained: dinbendon shop id, display name, blurb, delivery rules (`null` = pickup only), signatures, renames, **price fixes** |
+| `stores/meta/<slug>.json` | hand-maintained: dinbendon shop id, display name, blurb, delivery rules (`null` = pickup only) + `delivery_note`, signatures, renames, **price fixes**. Optionally a `manual_menu` (items with `kcal` / `options`, plus its source and assumptions) and `option_groups` (e.g. 飯量 正常/飯少/不要飯, 蔬菜 標準/加菜 +40, 套餐飲品 with no default = must ask) |
 | `stores/<slug>.json` | generated snapshot (meta + menu, variants) from `scripts/fetch_store.py` |
 | `scripts/fetch_store.py` | fetches and validates menus. **A suspicious price must be fixed explicitly in the meta file:** a variant >3× the item's cheapest, or an item >5× the store median. E.g. 裕佳 lists 叉燒香腸飯 五穀飯 at $1210 (white rice $120), fixed to 120 |
 | `agent.py` | `OrderTaker` + tools. **The store comes from the dispatch metadata** `{"store": slug}` (validated by the web Worker), else `BENDON_STORE`, else `aibi` |
 | `prompt.py` | per-store instructions (menu by name only, fulfillment rules, variant question) + greeting |
 | `menu.py` | `Store` + fuzzy search on characters **and** toneless pinyin (homophones like 滷魚→鱸魚, shorthand like 排骨飯→炸排骨飯, Simplified input, the 魩魚/吻仔魚/刎魚 synonyms) |
 | `order.py` | order model. **The LLM never owns money:** prices (incl. variant prices), totals, the store's delivery minimum and area, and pickup-only rules are all enforced here |
-| `evals/order_flow.py` | scripted-caller scenarios per store, scored on the final order: 愛比 pickup / delivery minimum + upsell / mid-order changes; 大無敵 pickup; 裕佳 variants + a refused delivery |
+| `evals/order_flow.py` | scripted-caller scenarios per store, scored on the final order (+ required phrases): 愛比 pickup / delivery minimum + upsell / mid-order changes; 大無敵 pickup; 裕佳 variants + a refused delivery; GET POWER calorie question (六百九十) + options with a must-ask drink + scheduled pickup |
 
 **Tools:**
 - menu: `find_menu_items`, `list_category`
-- order lines: `add_item` (with `variant` when a dish has 白飯 / 五穀飯 etc.), `update_item`, `remove_item`, `review_order`
+- order lines: `add_item` (with `variant` for 白飯 / 五穀飯 etc., and `options` like 「飯少、加菜、黑芝麻燕麥」 for option groups), `update_item`, `remove_item`, `review_order`
+  - **Option groups are applied server-side:** defaults fill unmentioned groups, a group without a default (the set drink) is refused until the caller chooses, price deltas (加菜 +40) are added, and the line label shows the non-default choices, e.g. 大厚切烤鮭魚餐盒（飯少・加菜・黑芝麻燕麥）= 420.
+  - **Calories:** `find_menu_items` / `list_category` include kcal, and the agent answers calorie questions only from that data.
 - fulfillment: `set_pickup`, `set_delivery` (enforces the store's minimum and area; refuses for pickup-only stores)
 - contact: `set_contact` (Taiwan phone numbers)
 - lifecycle: `confirm_order` (gives an order number and ready time), `cancel_order`

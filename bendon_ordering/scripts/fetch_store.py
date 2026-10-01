@@ -1,7 +1,9 @@
 """Snapshot a store's menu from dinbendon into bendon_ordering/stores/<slug>.json (issue #22).
 
 The hand-maintained stores/meta/<slug>.json supplies the dinbendon shop id and everything the
-page doesn't (display name, fulfillment rules, signature dishes, renames, price fixes). The
+page doesn't. A store without a usable dinbendon menu can carry its menu in the meta file as
+"manual_menu" (with its source and assumptions), e.g. GET POWER (#24); it gets the same checks.
+Per-store "option_groups" (e.g. rice portion / 加菜 / set drink) are copied through and checked (display name, fulfillment rules, signature dishes, renames, price fixes). The
 menu is validated: a suspicious price (a variant >3x the item's cheapest, or an item >5x the
 store median) must be fixed explicitly in "price_fixes" - the agent can never charge it.
 
@@ -79,7 +81,50 @@ class MenuParser(HTMLParser):
             self._field = None
 
 
+def build_manual(meta: dict) -> dict:
+    """A menu written into the meta file (no fetch). Same validation as fetched menus."""
+    groups = {g["id"]: g for g in meta.get("option_groups", [])}
+    items, problems = [], []
+    for ii, it in enumerate(meta["manual_menu"]["items"], 1):
+        item = {"id": f"m01i{ii:02d}", "category": it.get("category", ""), "name": it["name"],
+                "price": it["price"]}
+        if "kcal" in it:
+            item["kcal"] = it["kcal"]
+        if it.get("options"):
+            unknown = [o for o in it["options"] if o not in groups]
+            if unknown:
+                problems.append(f"{it['name']}: unknown option groups {unknown}")
+            item["options"] = it["options"]
+        items.append(item)
+    for g in groups.values():
+        names = [c["name"] for c in g["choices"]]
+        if g.get("default") not in (None, *names):
+            problems.append(f"option group {g['id']}: default {g['default']!r} not a choice")
+    choice_names = [c["name"] for g in groups.values() for c in g["choices"]]
+    if len(choice_names) != len(set(choice_names)):
+        problems.append("option choice names must be unique across groups (callers say just the choice)")
+    median = statistics.median(i["price"] for i in items)
+    problems += [f"{i['name']}: {i['price']} is >5x the store median {median}"
+                 for i in items if i["price"] > 5 * median]
+    if problems:
+        raise SystemExit(f"{meta['slug']}: fix these in stores/meta/{meta['slug']}.json:\n  "
+                         + "\n  ".join(problems))
+    return {
+        **{k: v for k, v in meta.items() if k not in ("rename", "price_fixes", "manual_menu")},
+        "source": meta["manual_menu"]["source"],
+        "source_assumptions": meta["manual_menu"].get("assumptions", []),
+        "source_updated": "",
+        "source_notice": "",
+        "snapshot_date": dt.date.today().isoformat(),
+        "price_fixes_applied": {},
+        "categories": list(dict.fromkeys(i["category"] for i in items if i["category"])),
+        "items": items,
+    }
+
+
 def build(meta: dict) -> dict:
+    if meta.get("manual_menu"):
+        return build_manual(meta)
     url = SOURCE.format(id=meta["source_shop_id"])
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (menu snapshot)"})
     p = MenuParser()
