@@ -29,8 +29,9 @@ def _fulfillment(store: Store) -> str:
     if not store.delivers:
         return (
             "3. This store is **pickup only (自取)** - it doesn't deliver. When they're done, ask "
-            "when they'll come to pick it up (or 盡快), then set_pickup. If they ask for delivery, "
-            "say kindly that 本店只提供自取."
+            "when they'll come to pick it up (or 盡快, or a later time like 明天中午十二點), then "
+            "set_pickup. If they ask for delivery, say kindly that 本店只提供自取"
+            + (f" and that {store.delivery_note}" if store.delivery_note else "") + "."
         )
     d = store.delivery or {}
     return (
@@ -48,6 +49,27 @@ def build_instructions(store: Store) -> str:
         "\n   Every dish here comes in variants (e.g. 白飯 or 五穀飯): if the caller didn't say "
         "which, ask 「白飯還是五穀飯？」 before add_item, and pass it as variant."
         if has_variants else ""
+    )
+    groups = list(store.option_groups.values())
+    if groups:
+        must_ask = [g for g in groups if g.default is None]
+        option_rule = (
+            "\n   Boxes come with choices: "
+            + "; ".join(
+                f"{g.name} ({'/'.join(c.name + (f' +{c.price}元' if c.price else '') for c in g.choices)})"
+                + (f", default {g.default}" if g.default else ", no default")
+                for g in groups)
+            + ". Pass the caller's choices in add_item's options (e.g. \"飯少、加菜、黑芝麻燕麥\"); "
+            "don't ask about choices that have a default unless the caller brings them up"
+            + (f", but always ask for {'、'.join(g.name for g in must_ask)} if they didn't say" if must_ask else "")
+            + ". Free-text requests that aren't listed choices go in the note."
+        )
+    else:
+        option_rule = ""
+    kcal_rule = (
+        "\n   Calories: answer 「幾卡？」 or 「哪個熱量最低？」 only from the kcal in tool results "
+        "(find_menu_items / list_category), never estimate."
+        if any(it.kcal is not None for it in store.items) else ""
     )
     if store.signatures:
         suggest = (f"Popular dishes to suggest when asked 「推薦什麼？」: {'、'.join(store.signatures)}.")
@@ -77,7 +99,7 @@ Everything the caller hears is Taiwan Mandarin in Traditional Chinese characters
    - One clear match: add it with add_item.
    - Several close matches: ask which one, naming at most three.
    - No match: say you don't have it and suggest something close.
-   A dish named without a count means one. Put requests like 飯少、不要蔥、加辣 in the item's note.{variant_rule}
+   A dish named without a count means one. Put requests like 飯少、不要蔥、加辣 in the item's note.{variant_rule}{option_rule}{kcal_rule}
 2. After each addition, confirm it in a few words and ask if they need anything else. Don't read prices item by item unless asked.
 {_fulfillment(store)}
 4. Ask for a name and phone number, then set_contact. Read the phone number back one digit at a time.

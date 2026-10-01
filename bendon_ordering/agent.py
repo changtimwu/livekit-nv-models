@@ -130,17 +130,20 @@ class OrderTaker(Agent):
         quantity: int = 1,
         note: str = "",
         variant: str = "",
+        options: str = "",
     ) -> str:
         """Add a dish to the order.
 
         Args:
             item_id: The id from find_menu_items / list_category, e.g. "c06i03".
             quantity: How many; a dish named without a count means 1.
-            note: Special requests for this dish, e.g. "飯少、不要蔥". Empty if none.
+            note: Free-text requests that aren't listed options, e.g. "不要蔥、加辣". Empty if none.
             variant: Required when the dish lists variants (e.g. "白飯" or "五穀飯"); else empty.
+            options: The caller's choices for the dish's listed options, separated by "、",
+                e.g. "飯少、加菜、黑芝麻燕麥". Unmentioned options with a default use it.
         """
         try:
-            line = ctx.userdata.order.add(item_id, quantity, note, variant)
+            line = ctx.userdata.order.add(item_id, quantity, note, variant, options)
         except OrderError as e:
             _raise(e)
         await ctx.userdata.publish()
@@ -154,6 +157,7 @@ class OrderTaker(Agent):
         quantity: int | None = None,
         note: str | None = None,
         variant: str | None = None,
+        options: str | None = None,
     ) -> str:
         """Change the quantity and/or note of a dish already in the order. Quantity 0 removes it.
 
@@ -162,9 +166,10 @@ class OrderTaker(Agent):
             quantity: The new total quantity, or omit to keep it.
             note: The new note, or omit to keep it.
             variant: Which variant line (e.g. "白飯"), if the dish is in the order with several.
+            options: Which options line (e.g. "飯少、黑芝麻燕麥"), if the dish is in the order with several.
         """
         try:
-            ctx.userdata.order.update(item_id, quantity, note, variant)
+            ctx.userdata.order.update(item_id, quantity, note, variant, options)
         except OrderError as e:
             _raise(e)
         await ctx.userdata.publish()
@@ -172,16 +177,21 @@ class OrderTaker(Agent):
 
     @function_tool()
     async def remove_item(
-        self, ctx: RunContext[Userdata], item_id: str, variant: str | None = None
+        self,
+        ctx: RunContext[Userdata],
+        item_id: str,
+        variant: str | None = None,
+        options: str | None = None,
     ) -> str:
         """Remove a dish from the order.
 
         Args:
             item_id: The dish's id.
             variant: Which variant line (e.g. "五穀飯"), if the dish is in the order with several.
+            options: Which options line (e.g. "無糖豆漿"), if the dish is in the order with several.
         """
         try:
-            ctx.userdata.order.remove(item_id, variant)
+            ctx.userdata.order.remove(item_id, variant, options)
         except OrderError as e:
             _raise(e)
         await ctx.userdata.publish()

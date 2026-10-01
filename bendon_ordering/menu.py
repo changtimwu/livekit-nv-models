@@ -29,22 +29,53 @@ class Variant:
 
 
 @dataclass(frozen=True)
+class OptionChoice:
+    name: str
+    price: int  # added to the item price, e.g. 加菜 +40
+
+
+@dataclass(frozen=True)
+class OptionGroup:
+    """A per-store choice applied to some items, e.g. 飯量 正常/飯少/不要飯 (#24)."""
+    id: str
+    name: str
+    choices: tuple[OptionChoice, ...]
+    default: str | None  # None = the caller must choose (the agent asks)
+
+    def choice(self, name: str) -> OptionChoice | None:
+        return next((c for c in self.choices if c.name == name), None)
+
+    def describe(self) -> str:
+        cs = "/".join(c.name + (f"(+{c.price})" if c.price else "") for c in self.choices)
+        return f"{self.name} {cs}" + (f" [default {self.default}]" if self.default else " [ask]")
+
+
+@dataclass(frozen=True)
 class MenuItem:
     id: str
     category: str
     name: str
     price: int  # cheapest variant when there are variants
     variants: tuple[Variant, ...] = ()
+    kcal: int | None = None
+    option_groups: tuple[OptionGroup, ...] = ()
 
     def variant(self, name: str) -> Variant | None:
         want = name.strip()
         return next((v for v in self.variants if v.name == want or want in v.name), None)
 
     def describe(self) -> str:
-        if not self.variants:
-            return f"[{self.id}] {self.name} {self.price}"
-        vs = " / ".join(f"{v.name} {v.price}" for v in self.variants)
-        return f"[{self.id}] {self.name} (variants: {vs})"
+        if self.variants:
+            vs = " / ".join(f"{v.name} {v.price}" for v in self.variants)
+            out = f"[{self.id}] {self.name} (variants: {vs})"
+        else:
+            out = f"[{self.id}] {self.name} {self.price}"
+        extra = []
+        if self.kcal is not None:
+            extra.append(f"{self.kcal} kcal")
+        if self.option_groups:
+            extra.append("options: " + "; ".join(g.describe() for g in self.option_groups))
+        return out + (f" ({'; '.join(extra)})" if extra else "")
 
 
 class Store:
@@ -58,13 +89,22 @@ class Store:
         self.description: str = data.get("description", "")
         self.address: str = data.get("address", "")
         self.delivery: dict | None = data.get("delivery")  # None = pickup only
+        self.delivery_note: str = data.get("delivery_note", "")  # e.g. 外送請透過 Uber Eats
         self.signatures: list[str] = data.get("signatures", [])
         self.pickup_minutes: int = data.get("pickup_minutes", 20)
         self.delivery_minutes: int = data.get("delivery_minutes", 40)
         self.categories: list[str] = data.get("categories", [])
+        self.option_groups: dict[str, OptionGroup] = {
+            g["id"]: OptionGroup(g["id"], g["name"],
+                                 tuple(OptionChoice(c["name"], c.get("price", 0)) for c in g["choices"]),
+                                 g.get("default"))
+            for g in data.get("option_groups", [])
+        }
         self.items: list[MenuItem] = [
             MenuItem(i["id"], i["category"], i["name"], i["price"],
-                     tuple(Variant(v["name"], v["price"]) for v in i.get("variants", [])))
+                     tuple(Variant(v["name"], v["price"]) for v in i.get("variants", [])),
+                     i.get("kcal"),
+                     tuple(self.option_groups[g] for g in i.get("options", [])))
             for i in data["items"]
         ]
         self._by_id = {it.id: it for it in self.items}

@@ -6,7 +6,7 @@ cd "$(dirname "$0")"
 STORES_JSON="$(python3 - <<'PY'
 import json, os
 d = os.path.join("..", "..", "bendon_ordering", "stores")
-order = ["aibi", "dawudi", "yujia"]
+order = ["aibi", "dawudi", "yujia", "getpower"]
 out = []
 for slug in order:
     s = json.load(open(os.path.join(d, f"{slug}.json"), encoding="utf-8"))
